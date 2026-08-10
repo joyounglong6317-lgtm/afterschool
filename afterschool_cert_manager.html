@@ -1,0 +1,1893 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>한일여자고등학교 커리어패스</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@500;700;900&family=Noto+Sans+KR:wght@400;500;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
+<style>
+  :root{
+    --paper:#FAF7F2; --paper-line:#e4dbc9;
+    --navy:#1B2A4A; --navy-2:#2C4470; --navy-soft:#eef1f7;
+    --gold:#C9A227; --gold-soft:#f6ecc9;
+    --red:#B0413E; --red-soft:#f7e6e4;
+    --green:#3D7A5C; --green-soft:#e5f0ea;
+    --gray:#6b6455; --gray-soft:#eeeae2;
+    --ink:#2c2a24; --ink-soft:#6b6455; --line:#ddd5c7;
+    --radius:10px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{background:var(--paper); background-image:linear-gradient(var(--paper-line) 1px, transparent 1px); background-size:100% 40px; color:var(--ink); font-family:'Noto Sans KR', sans-serif; min-height:100vh;}
+  .mono{font-family:'IBM Plex Mono', monospace;}
+  .app-header{background:var(--navy); color:#fff; padding:22px 28px; display:flex; align-items:center; justify-content:space-between; box-shadow:0 2px 0 var(--gold);}
+  .app-header .title-block{display:flex; flex-direction:column; gap:2px;}
+  .app-header .eyebrow{font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:.14em; color:var(--gold); text-transform:uppercase;}
+  .app-header h1{font-family:'Noto Serif KR',serif; font-weight:900; font-size:22px; margin:0; letter-spacing:-.01em;}
+  .app-header .user-chip{font-size:13px; background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.25); padding:8px 14px; border-radius:999px; display:flex; align-items:center; gap:10px; max-width:60%;}
+  .app-header .user-chip span{overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .app-header button.logout{background:none; border:1px solid rgba(255,255,255,.4); color:#fff; border-radius:999px; padding:4px 12px; font-size:12px; cursor:pointer; flex-shrink:0;}
+  .app-header button.logout:hover{background:rgba(255,255,255,.15);}
+  .wrap{max-width:1100px; margin:0 auto; padding:28px;}
+
+  .login-screen{min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px;}
+  .ledger-card{background:#fff; border:1px solid var(--line); border-radius:var(--radius); box-shadow:0 1px 3px rgba(27,42,74,.08),0 10px 30px rgba(27,42,74,.06); width:100%; max-width:440px; overflow:hidden;}
+  .ledger-card .band{background:var(--navy); color:#fff; padding:26px 28px 20px;}
+  .ledger-card .band .eyebrow{font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:.14em; color:var(--gold); text-transform:uppercase;}
+  .ledger-card .band h2{font-family:'Noto Serif KR',serif; font-weight:900; font-size:22px; margin:6px 0 0;}
+  .ledger-card .body{padding:24px 28px 28px;}
+
+  .role-toggle{display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-bottom:20px; background:var(--navy-soft); padding:5px; border-radius:12px;}
+  .role-toggle button{border:none; background:transparent; padding:10px 0; border-radius:8px; font-size:13px; font-weight:700; color:var(--navy-2); cursor:pointer; font-family:inherit;}
+  .role-toggle button.active{background:var(--navy); color:#fff;}
+
+  label{display:block; font-size:12px; font-weight:700; color:var(--ink-soft); margin:14px 0 6px;}
+  label:first-of-type{margin-top:0;}
+  .checkbox-inline{display:flex; align-items:center; gap:8px; font-weight:700; font-size:13px; color:var(--ink); margin:16px 0 8px;}
+  .checkbox-inline input{width:auto;}
+  input, select, textarea{width:100%; border:1px solid var(--line); border-radius:8px; padding:10px 12px; font-size:14px; font-family:inherit; background:#fffdf9; color:var(--ink);}
+  input:focus, select:focus, textarea:focus{outline:2px solid var(--gold); outline-offset:1px; border-color:var(--gold);}
+
+  .btn{display:inline-flex; align-items:center; justify-content:center; gap:6px; border:none; border-radius:8px; padding:11px 18px; font-size:14px; font-weight:700; font-family:inherit; cursor:pointer;}
+  .btn-primary{background:var(--navy); color:#fff;} .btn-primary:hover{background:var(--navy-2);}
+  .btn-gold{background:var(--gold); color:var(--navy);} .btn-gold:hover{filter:brightness(1.05);}
+  .btn-ghost{background:transparent; color:var(--navy); border:1px solid var(--line);} .btn-ghost:hover{background:var(--navy-soft);}
+  .btn-danger{background:var(--red-soft); color:var(--red);} .btn-danger:hover{background:#f2d4d1;}
+  .btn-block{width:100%; margin-top:18px;}
+  .btn-sm{padding:6px 12px; font-size:12px;}
+  .btn:disabled{opacity:.45; cursor:not-allowed;}
+
+  .err-msg{color:var(--red); font-size:12.5px; margin-top:10px; display:none;}
+
+  .tabbar{display:flex; gap:4px; border-bottom:2px solid var(--navy); margin-bottom:24px; flex-wrap:wrap;}
+  .tabbar button{font-family:'Noto Serif KR',serif; font-weight:700; font-size:13.5px; padding:10px 15px; border:none; background:transparent; color:var(--ink-soft); cursor:pointer; border-radius:8px 8px 0 0; position:relative; top:2px;}
+  .tabbar button.active{background:var(--navy); color:#fff;}
+  .subtabbar{display:flex; gap:6px; margin-bottom:18px; flex-wrap:wrap;}
+  .subtabbar button{border:1px solid var(--line); background:#fff; color:var(--navy-2); font-size:12.5px; font-weight:700; padding:7px 14px; border-radius:999px; cursor:pointer; font-family:inherit;}
+  .subtabbar button.active{background:var(--gold-soft); border-color:var(--gold); color:var(--navy);}
+  .panel{display:none;} .panel.active{display:block;}
+  .subpanel{display:none;} .subpanel.active{display:block;}
+
+  .section-title{font-family:'Noto Serif KR',serif; font-weight:900; font-size:18px; color:var(--navy); margin:0 0 4px;}
+  .section-desc{font-size:13px; color:var(--ink-soft); margin:0 0 18px;}
+  .card{background:#fff; border:1px solid var(--line); border-radius:var(--radius); padding:20px; margin-bottom:16px;}
+  .card-row{display:flex; justify-content:space-between; align-items:flex-start; gap:16px; flex-wrap:wrap;}
+  .grid-2{display:grid; grid-template-columns:1fr 1fr; gap:14px;}
+  @media (max-width:640px){ .grid-2{grid-template-columns:1fr;} }
+
+  .program-name{font-weight:700; font-size:15.5px; color:var(--navy);}
+  .meta-line{font-size:12.5px; color:var(--ink-soft); margin-top:4px;}
+  .capacity-tag{font-family:'IBM Plex Mono',monospace; font-size:12px; background:var(--navy-soft); color:var(--navy-2); padding:3px 9px; border-radius:999px;}
+
+  .stamp{display:inline-flex; align-items:center; justify-content:center; font-family:'Noto Serif KR',serif; font-weight:900; font-size:11.5px; letter-spacing:.05em; padding:5px 11px; border-radius:6px; border:2px solid currentColor; transform:rotate(-3deg); white-space:nowrap;}
+  .stamp-pending{color:var(--gold); background:var(--gold-soft);}
+  .stamp-approved{color:var(--green); background:var(--green-soft);}
+  .stamp-rejected{color:var(--red); background:var(--red-soft);}
+  .stamp-neutral{color:var(--gray); background:var(--gray-soft);}
+
+  table{width:100%; border-collapse:collapse; font-size:13.5px;}
+  th{text-align:left; font-size:11px; letter-spacing:.04em; color:var(--ink-soft); text-transform:uppercase; padding:8px 10px; border-bottom:2px solid var(--navy); white-space:nowrap;}
+  td{padding:9px 10px; border-bottom:1px solid var(--line); vertical-align:middle;}
+  tr:hover td{background:#fbf9f4;}
+  .table-scroll{overflow-x:auto;}
+
+  .toolbar{display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:14px; flex-wrap:wrap;}
+  .filter-row{display:flex; gap:8px; flex-wrap:wrap; align-items:center;}
+  .filter-row select, .filter-row input{width:auto; min-width:120px;}
+
+  .stat-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px; margin-bottom:20px;}
+  .stat-card{background:#fff; border:1px solid var(--line); border-radius:var(--radius); padding:16px 18px;}
+  .stat-card .num{font-family:'IBM Plex Mono',monospace; font-size:26px; font-weight:600; color:var(--navy);}
+  .stat-card .label{font-size:12px; color:var(--ink-soft); margin-top:4px;}
+
+  .bar-row{display:flex; align-items:center; gap:10px; margin-bottom:8px;}
+  .bar-label{width:150px; font-size:12.5px; flex-shrink:0; text-align:right; color:var(--ink-soft); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .bar-track{flex:1; background:var(--navy-soft); border-radius:4px; height:16px; overflow:hidden;}
+  .bar-fill{background:var(--gold); height:100%; border-radius:4px;}
+  .bar-count{width:28px; font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--navy);}
+
+  .empty-state{text-align:center; padding:36px 20px; color:var(--ink-soft); font-size:13.5px;}
+  .empty-state .big{font-size:15px; color:var(--navy); font-weight:700; margin-bottom:4px;}
+
+  .modal-bg{display:none; position:fixed; inset:0; background:rgba(27,42,74,.45); align-items:center; justify-content:center; padding:20px; z-index:50;}
+  .modal-bg.active{display:flex;}
+  .modal{background:#fff; border-radius:var(--radius); max-width:520px; width:100%; padding:24px; max-height:88vh; overflow-y:auto;}
+  .modal h3{font-family:'Noto Serif KR',serif; margin:0 0 16px; color:var(--navy);}
+  .modal-actions{display:flex; gap:8px; justify-content:flex-end; margin-top:18px;}
+
+  .toast{position:fixed; bottom:24px; left:50%; transform:translateX(-50%); background:var(--navy); color:#fff; padding:12px 20px; border-radius:999px; font-size:13px; box-shadow:0 8px 24px rgba(0,0,0,.2); opacity:0; pointer-events:none; transition:opacity .25s, transform .25s; z-index:100;}
+  .toast.show{opacity:1; transform:translateX(-50%) translateY(-6px);}
+
+  .setup-banner{background:var(--red-soft); color:var(--red); border:1px solid #e6b9b5; border-radius:8px; padding:14px 16px; font-size:13px; margin-bottom:20px; line-height:1.6;}
+  .setup-banner code{background:rgba(0,0,0,.06); padding:1px 5px; border-radius:4px; font-family:'IBM Plex Mono',monospace;}
+
+  .checkbox-grid{display:grid; grid-template-columns:1fr 1fr; gap:8px; max-height:200px; overflow-y:auto; border:1px solid var(--line); border-radius:8px; padding:10px; background:#fffdf9;}
+  .checkbox-grid label{display:flex; align-items:center; gap:6px; font-weight:400; font-size:13px; color:var(--ink); margin:0;}
+  .checkbox-grid input[type=checkbox]{width:auto;}
+
+  .att-btn-group{display:flex; gap:4px;}
+  .att-btn{border:1px solid var(--line); background:#fff; border-radius:6px; padding:5px 10px; font-size:12px; font-weight:700; cursor:pointer; font-family:inherit; color:var(--ink-soft);}
+  .att-btn.sel-present{background:var(--green); color:#fff; border-color:var(--green);}
+  .att-btn.sel-late{background:var(--gold); color:var(--navy); border-color:var(--gold);}
+  .att-btn.sel-absent{background:var(--red); color:#fff; border-color:var(--red);}
+  .att-btn.sel-excused{background:var(--gray); color:#fff; border-color:var(--gray);}
+
+  .file-btn{display:inline-block; background:var(--navy-soft); color:var(--navy-2); border-radius:6px; padding:6px 12px; font-size:12px; font-weight:700; cursor:pointer;}
+  .file-btn input{display:none;}
+  .doc-link{font-size:12px; color:var(--navy-2); text-decoration:underline; cursor:pointer;}
+
+  @media print{
+    body *{visibility:hidden;}
+    #printArea, #printArea *{visibility:visible;}
+    #printArea{position:absolute; top:0; left:0; width:100%; padding:20px;}
+    .no-print{display:none !important;}
+  }
+</style>
+</head>
+<body>
+
+<!-- ============ 로그인 화면 ============ -->
+<div id="loginScreen" class="login-screen">
+  <div class="ledger-card">
+    <div class="band">
+      <div class="eyebrow">After-school & Certification</div>
+      <h2>한일여자고등학교 커리어패스</h2>
+      <p style="font-size:12.5px; color:rgba(255,255,255,.75); margin:6px 0 0;">방과후 신청부터 자격증·기능장 관리까지</p>
+    </div>
+    <div class="body">
+      <div id="setupBanner" class="setup-banner" style="display:none;">
+        ⚠ Firebase 설정이 필요합니다. 코드 상단의 <code>firebaseConfig</code> 값을 본인의 Firebase 프로젝트 정보로 교체해주세요.
+      </div>
+
+      <div class="role-toggle">
+        <button id="roleBtn-student" class="active" onclick="switchRole('student')">학생</button>
+        <button id="roleBtn-teacher" onclick="switchRole('teacher')">교사</button>
+      </div>
+
+      <div id="form-student">
+        <label>학번</label>
+        <input type="text" id="loginStudentId" placeholder="예: 10305" inputmode="numeric">
+        <label>PIN (4자리)</label>
+        <input type="password" id="loginPin" placeholder="••••" inputmode="numeric" maxlength="4">
+        <button class="btn btn-primary btn-block" onclick="studentLogin()">로그인</button>
+      </div>
+
+      <div id="form-teacher" style="display:none;">
+        <label>아이디</label>
+        <input type="text" id="loginTeacherId" placeholder="교사 아이디">
+        <label>비밀번호</label>
+        <input type="password" id="loginTeacherPw" placeholder="비밀번호">
+        <button class="btn btn-gold btn-block" onclick="teacherLogin()">교사 로그인</button>
+        <p style="font-size:11.5px; color:var(--ink-soft); margin-top:10px; line-height:1.6;">담임·방과후·관리자 권한이 모두 이 하나의 로그인으로 통합되어 있습니다. 로그인 후 본인이 가진 권한에 해당하는 탭만 자동으로 표시됩니다.</p>
+        <p style="text-align:center; margin-top:14px;"><a href="#" onclick="openSignupModal(); return false;" style="font-size:12.5px; color:var(--navy-2); font-weight:700; text-decoration:underline;">처음이신가요? 계정 만들기</a></p>
+      </div>
+
+      <div id="loginErr" class="err-msg"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 승인 대기 화면 ============ -->
+<div id="pendingScreen" class="login-screen" style="display:none;">
+  <div class="ledger-card">
+    <div class="band">
+      <div class="eyebrow">After-school & Certification</div>
+      <h2>가입 승인 대기 중</h2>
+    </div>
+    <div class="body">
+      <p style="font-size:13.5px; line-height:1.8; color:var(--ink-soft);">
+        <span id="pendingScreenName" style="font-weight:700; color:var(--ink);"></span>님, 회원가입 신청이 접수되었습니다.<br>
+        관리자 승인이 완료되면 담당하신 업무 화면을 이용하실 수 있습니다.
+      </p>
+      <button class="btn btn-ghost btn-block" onclick="logout()">로그인 화면으로</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 학생 화면 ============ -->
+<div id="studentApp" style="display:none;">
+  <div class="app-header">
+    <div class="title-block"><div class="eyebrow">Student Portal</div><h1>한일여자고등학교 커리어패스</h1></div>
+    <div class="user-chip"><span id="studentChipName">-</span><button class="logout" onclick="logout()">로그아웃</button></div>
+  </div>
+  <div class="wrap">
+    <div class="tabbar">
+      <button class="tab-btn active" data-panel="s-programs" onclick="switchTab(this,'s-programs')">📝 방과후 신청(수요조사)</button>
+      <button class="tab-btn" data-panel="s-confirmed" onclick="switchTab(this,'s-confirmed')">✅ 확정된 수업</button>
+      <button class="tab-btn" data-panel="s-certs" onclick="switchTab(this,'s-certs')">📄 자격증 제출</button>
+      <button class="tab-btn" data-panel="s-status" onclick="switchTab(this,'s-status')">👤 내 정보</button>
+    </div>
+
+    <div id="s-programs" class="panel active">
+      <div class="section-title">방과후 프로그램 신청</div>
+      <p class="section-desc">개설된 프로그램을 확인하고 신청하세요. 신청 후 관리자 확정 → 참여 확정 절차를 거치면 "확정된 수업" 탭에서 확인할 수 있어요.</p>
+      <div id="lockBannerStudent1" class="setup-banner" style="display:none;"></div>
+      <div id="programList"></div>
+    </div>
+
+    <div id="s-confirmed" class="panel">
+      <div class="section-title">확정된 방과후 수업</div>
+      <p class="section-desc">신청한 프로그램의 확정 진행 상황과, 확정 후에는 실제 참여를 다시 한번 확인해주세요. 방과후 선생님이 보낸 전달사항도 여기서 확인할 수 있습니다.</p>
+      <div id="myEnrollments"></div>
+    </div>
+
+    <div id="s-certs" class="panel">
+      <div class="section-title">자격증·기능장 취득 제출</div>
+      <p class="section-desc">취득한 자격증을 목록에서 선택해 제출하면 선생님 검토 후 승인 처리됩니다.</p>
+      <div id="lockBannerStudent2" class="setup-banner" style="display:none;"></div>
+      <div class="card">
+        <div class="grid-2">
+          <div><label>자격증 종류</label><select id="certTypeSelect"><option value="">선택하세요</option></select></div>
+          <div><label>급수/등급</label><input type="text" id="certLevel" placeholder="예: 2급"></div>
+          <div><label>발급기관</label><input type="text" id="certIssuer" placeholder="예: 대한상공회의소"></div>
+          <div><label>취득일</label><input type="date" id="certDate" min="2000-01-01" max="2035-12-31"></div>
+          <div><label>취득번호</label><input type="text" id="certNumber" placeholder="예: 자격증 상의 발급번호"></div>
+        </div>
+        <label>비고</label>
+        <textarea id="certNote" rows="2" placeholder="추가로 전달할 내용이 있으면 입력하세요 (선택)"></textarea>
+        <label>증빙 PDF 첨부 (선택)</label>
+        <input type="file" id="certProofFile" accept="application/pdf">
+        <button class="btn btn-primary btn-block" id="certSubmitBtn" onclick="submitCert()">제출하기</button>
+      </div>
+    </div>
+
+    <div id="s-status" class="panel">
+      <div class="section-title">내 정보</div>
+      <p class="section-desc" style="margin-bottom:6px;">자격증 제출 내역 (누적 승인 점수: <span id="myPoints" class="mono">0</span>점)</p>
+      <div id="myCerts"></div>
+
+      <div class="card" style="margin-top:24px;">
+        <div class="section-title" style="font-size:15px;">PIN 변경</div>
+        <div class="grid-2">
+          <div><label>현재 PIN</label><input type="password" id="curPin" maxlength="4" inputmode="numeric" placeholder="••••"></div>
+          <div><label>새 PIN (4자리)</label><input type="password" id="newPin" maxlength="4" inputmode="numeric" placeholder="••••"></div>
+        </div>
+        <label>새 PIN 확인</label><input type="password" id="confirmPin" maxlength="4" inputmode="numeric" placeholder="••••">
+        <button class="btn btn-primary btn-block" onclick="changeMyPin()">PIN 변경하기</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 교사 화면 (통합: 담임 + 방과후 + 관리자) ============ -->
+<div id="teacherApp" style="display:none;">
+  <div class="app-header">
+    <div class="title-block"><div class="eyebrow">Teacher Portal</div><h1>한일여자고등학교 커리어패스</h1></div>
+    <div class="user-chip"><span id="teacherChipInfo">-</span><button class="logout" onclick="openMyPwModal()">비밀번호 변경</button><button class="logout" onclick="logout()">로그아웃</button></div>
+  </div>
+  <div class="wrap">
+    <div id="teacherTabbar" class="tabbar"></div>
+
+    <div id="ptProgramBar" class="filter-row" style="display:none; margin-bottom:18px;">
+      <label style="margin:0;">담당 프로그램</label>
+      <select id="ptProgramSelect" onchange="onPtProgramChange()"></select>
+    </div>
+
+    <!-- 담임: 방과후 수요조사 -->
+    <div id="h-demand" class="panel">
+      <div class="toolbar">
+        <div><div class="section-title" style="margin-bottom:2px;">우리 반 방과후 신청 현황</div><p class="section-desc" style="margin:0;">학생이 직접 신청하지 않았다면 대신 등록할 수 있습니다.</p></div>
+        <div style="display:flex; gap:8px;">
+          <button class="btn btn-ghost" onclick="exportHrDemandExcel()">⬇ 엑셀로 내보내기</button>
+          <button class="btn btn-gold" id="hrAddEnrollBtn" onclick="openHrAddEnrollModal()">+ 학생 신청 추가</button>
+        </div>
+      </div>
+      <div id="lockBannerHr1" class="setup-banner" style="display:none;"></div>
+      <div class="table-scroll"><table><thead><tr><th>학번</th><th>이름</th><th>프로그램</th><th>신청일</th><th>등록방식</th><th>처리</th></tr></thead><tbody id="hrDemandTableBody"></tbody></table></div>
+    </div>
+
+    <!-- 담임: 기능장 서류 -->
+    <div id="h-skilldoc" class="panel">
+      <div class="section-title">기능장 서류 제출</div>
+      <p class="section-desc">자격증 누적 점수 35점 이상인 학생은 관련 서류(PDF)를 제출해야 합니다.</p>
+      <div id="lockBannerHr2" class="setup-banner" style="display:none;"></div>
+      <div class="table-scroll"><table><thead><tr><th>학번</th><th>이름</th><th>누적점수</th><th>기준(35점)</th><th>제출 서류</th><th>서류 업로드</th></tr></thead><tbody id="hrSkillTableBody"></tbody></table></div>
+    </div>
+
+    <!-- 담임: 자격증 서류 확인 -->
+    <div id="h-certdocs" class="panel">
+      <div class="toolbar">
+        <div><div class="section-title" style="margin-bottom:2px;">자격증 제출 서류 확인</div><p class="section-desc" style="margin:0;">학생이 첨부한 자격증 증빙 PDF를 확인하고, 생기부 작성에 활용할 수 있도록 다운로드하세요.</p></div>
+        <button class="btn btn-gold" onclick="downloadHrCertDocs()">⬇ 전체 PDF 다운로드</button>
+      </div>
+      <div class="table-scroll">
+        <table><thead><tr><th>학번</th><th>이름</th><th>자격증명</th><th>급수</th><th>취득일</th><th>취득번호</th><th>상태</th><th>첨부파일</th></tr></thead><tbody id="hrCertDocsTableBody"></tbody></table>
+      </div>
+    </div>
+
+    <!-- 방과후: 출석 체크 -->
+    <div id="p-check" class="panel">
+      <div class="toolbar">
+        <div class="section-title" style="margin:0;">출석 체크</div>
+        <div class="filter-row">
+          <input type="date" id="ptCheckDate" min="2020-01-01" max="2035-12-31" onchange="renderAttendanceCheck()">
+          <button class="btn btn-primary" onclick="saveAttendance()">저장하기</button>
+        </div>
+      </div>
+      <div id="sessionProgressInfo" class="meta-line" style="margin-bottom:14px; font-size:13px;"></div>
+      <div id="attendanceCheckList"></div>
+    </div>
+
+    <!-- 방과후: 출석부 조회 -->
+    <div id="p-view" class="panel">
+      <div class="toolbar">
+        <div class="section-title" style="margin:0;">출석부 조회</div>
+        <div class="filter-row">
+          <input type="month" id="ptViewMonth" min="2020-01" max="2035-12" onchange="renderAttendanceGrid()">
+          <button class="btn btn-ghost" onclick="exportAttendanceExcel()">⬇ 엑셀 내보내기</button>
+          <button class="btn btn-primary" onclick="window.print()">🖨 인쇄하기</button>
+        </div>
+      </div>
+      <div id="printArea">
+        <h3 id="printTitle" style="font-family:'Noto Serif KR',serif;"></h3>
+        <div class="table-scroll"><table id="attendanceGridTable"></table></div>
+      </div>
+    </div>
+
+    <!-- 방과후: 공지 전달 -->
+    <div id="p-notice" class="panel">
+      <div class="section-title">학생에게 전달사항 보내기</div>
+      <p class="section-desc">선택한 프로그램에 실제 참여 확정을 마친 학생들에게만 전달사항이 표시됩니다.</p>
+      <div class="card">
+        <label>전달사항 내용</label>
+        <textarea id="noticeContent" rows="3" placeholder="예: 다음 수업은 컴퓨터실이 아닌 회의실에서 진행합니다."></textarea>
+        <button class="btn btn-primary btn-block" onclick="sendProgramNotice()">전달사항 보내기</button>
+      </div>
+      <div class="section-title" style="font-size:15px; margin-top:20px;">보낸 전달사항</div>
+      <div id="noticeList"></div>
+    </div>
+
+    <!-- 관리자: 통계 -->
+    <div id="t-stats" class="panel">
+      <div class="section-title">전체 현황</div>
+      <div class="stat-grid">
+        <div class="stat-card"><div class="num" id="statTotalStudents">0</div><div class="label">등록 학생 수</div></div>
+        <div class="stat-card"><div class="num" id="statTotalPrograms">0</div><div class="label">개설 프로그램</div></div>
+        <div class="stat-card"><div class="num" id="statTotalEnroll">0</div><div class="label">방과후 신청 건수</div></div>
+        <div class="stat-card"><div class="num" id="statPendingCerts">0</div><div class="label">자격증 승인대기</div></div>
+        <div class="stat-card"><div class="num" id="statSkillEligible">0</div><div class="label">기능장 기준(35점) 충족</div></div>
+      </div>
+      <div class="card"><div class="section-title" style="font-size:15px;">프로그램별 신청 인원</div><div id="programBarChart" style="margin-top:14px;"></div></div>
+      <div class="card"><div class="section-title" style="font-size:15px;">자격증별 취득 건수 (승인완료)</div><div id="certBarChart" style="margin-top:14px;"></div></div>
+
+      <div class="toolbar" style="margin-top:8px;">
+        <div><div class="section-title" style="margin-bottom:2px;">전체 방과후 신청 명단</div><p class="section-desc" style="margin:0;">전체 프로그램의 신청 현황을 한 번에 확인·내보내기 할 수 있습니다.</p></div>
+        <button class="btn btn-ghost" onclick="exportAllEnrollmentsExcel()">⬇ 엑셀로 내보내기</button>
+      </div>
+      <div class="filter-row" style="margin-bottom:14px;">
+        <select id="statsProgramFilter" onchange="renderAllEnrollmentsTable()"><option value="">전체 프로그램</option></select>
+        <select id="statsConfirmFilter" onchange="renderAllEnrollmentsTable()">
+          <option value="">전체 상태</option>
+          <option value="unconfirmed">관리자 확정 대기</option>
+          <option value="adminConfirmed">관리자 확정 · 학생 확인 대기</option>
+          <option value="fullyConfirmed">참여 확정 완료</option>
+        </select>
+        <input type="text" id="statsSearchName" placeholder="학생명 검색" oninput="renderAllEnrollmentsTable()">
+      </div>
+      <div class="table-scroll">
+        <table><thead><tr><th>학번</th><th>이름</th><th>반</th><th>프로그램</th><th>신청일</th><th>관리자 확정</th><th>학생 참여확정</th></tr></thead><tbody id="allEnrollmentsTableBody"></tbody></table>
+      </div>
+    </div>
+
+    <!-- 관리자: 방과후 관리 -->
+    <div id="t-programs" class="panel">
+      <div class="toolbar">
+        <div><div class="section-title" style="margin-bottom:2px;">방과후 프로그램 관리</div><p class="section-desc" style="margin:0;">프로그램을 개설하고 신청 현황을 확인·내보내기 하세요.</p></div>
+        <button class="btn btn-gold" onclick="openProgramModal()">+ 프로그램 개설</button>
+      </div>
+      <div id="teacherProgramList"></div>
+    </div>
+
+    <!-- 관리자: 자격증 관리 -->
+    <div id="t-certs" class="panel">
+      <div class="toolbar">
+        <div><div class="section-title" style="margin-bottom:2px;">자격증·기능장 취득 현황</div><p class="section-desc" style="margin:0;">제출된 자격증을 검토하고 승인/반려 처리하세요.</p></div>
+        <button class="btn btn-ghost" onclick="exportCertsExcel()">⬇ 엑셀로 내보내기</button>
+      </div>
+      <div class="filter-row" style="margin-bottom:14px;">
+        <select id="certFilterStatus" onchange="renderTeacherCerts()"><option value="">전체 상태</option><option value="pending">승인대기</option><option value="approved">승인완료</option><option value="rejected">반려</option></select>
+        <select id="certFilterClass" onchange="renderTeacherCerts()"><option value="">전체 반</option></select>
+        <input type="text" id="certSearchName" placeholder="학생명 검색" oninput="renderTeacherCerts()">
+      </div>
+      <div class="table-scroll">
+        <table><thead><tr><th>학번</th><th>이름</th><th>반</th><th>자격증명</th><th>급수</th><th>발급기관</th><th>취득일</th><th>취득번호</th><th>첨부</th><th>배점</th><th>상태</th><th>처리</th></tr></thead><tbody id="certTableBody"></tbody></table>
+      </div>
+      <div id="certEmptyState"></div>
+    </div>
+
+    <!-- 관리자: 학생 관리 -->
+    <div id="t-students" class="panel">
+      <div class="toolbar">
+        <div><div class="section-title" style="margin-bottom:2px;">학생 명단 관리</div><p class="section-desc" style="margin:0;">학생 로그인에 사용되는 학번·PIN을 등록·관리합니다.</p></div>
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+          <button class="btn btn-ghost" onclick="downloadStudentTemplate()">⬇ 업로드 양식 다운로드</button>
+          <button class="btn btn-ghost" onclick="document.getElementById('studentExcelInput').click()">⬆ 엑셀 일괄 등록</button>
+          <input type="file" id="studentExcelInput" accept=".xlsx,.xls,.csv" style="display:none;" onchange="handleStudentExcelUpload(event)">
+          <button class="btn btn-gold" onclick="openStudentModal()">+ 학생 추가</button>
+        </div>
+      </div>
+      <div class="filter-row" style="margin-bottom:14px;"><input type="text" id="studentSearch" placeholder="학번 또는 이름 검색" oninput="renderStudentTable()" style="min-width:220px;"></div>
+      <div class="table-scroll"><table><thead><tr><th>학번</th><th>이름</th><th>반</th><th>PIN</th><th>처리</th></tr></thead><tbody id="studentTableBody"></tbody></table></div>
+    </div>
+
+    <!-- 관리자: 설정 -->
+    <div id="t-settings" class="panel">
+      <div class="subtabbar">
+        <button class="subtab-btn active" data-sp="set-certtype" onclick="switchSubTab(this,'set-certtype')">자격증 종류 관리</button>
+        <button class="subtab-btn" data-sp="set-skillmaster" onclick="switchSubTab(this,'set-skillmaster')">기능장 현황</button>
+        <button class="subtab-btn" data-sp="set-accounts" onclick="switchSubTab(this,'set-accounts')">계정 관리</button>
+        <button class="subtab-btn" data-sp="set-deadline" onclick="switchSubTab(this,'set-deadline')">마감 설정</button>
+      </div>
+
+      <div id="set-certtype" class="subpanel active">
+        <div class="toolbar">
+          <div><div class="section-title" style="margin-bottom:2px;">자격증 종류 관리</div><p class="section-desc" style="margin:0;">학생이 자격증 제출 시 선택할 목록과 배점을 관리합니다. 기능장 판정(35점)은 승인된 자격증의 배점 합산으로 계산됩니다.</p></div>
+          <button class="btn btn-gold" onclick="openCertTypeModal()">+ 종류 추가</button>
+        </div>
+        <div class="table-scroll"><table><thead><tr><th>자격증명</th><th>배점</th><th>처리</th></tr></thead><tbody id="certTypeTableBody"></tbody></table></div>
+      </div>
+
+      <div id="set-skillmaster" class="subpanel">
+        <div class="toolbar">
+          <div><div class="section-title" style="margin-bottom:2px;">기능장 현황 및 서류 다운로드</div><p class="section-desc" style="margin:0;">담임교사가 업로드한 서류를 반별 또는 전체로 다운로드할 수 있습니다.</p></div>
+          <div class="filter-row">
+            <select id="skillClassFilter" onchange="renderSkillMasterTable()"><option value="">전체 반</option></select>
+            <label style="display:flex; align-items:center; gap:6px; margin:0; font-weight:400;"><input type="checkbox" id="skillOnlyEligible" style="width:auto;" onchange="renderSkillMasterTable()"> 35점 이상만 보기</label>
+            <button class="btn btn-ghost" onclick="downloadSkillDocsByClass()">⬇ 반별 다운로드</button>
+            <button class="btn btn-primary" onclick="downloadAllSkillDocs()">⬇ 전체 다운로드</button>
+          </div>
+        </div>
+        <div class="table-scroll"><table><thead><tr><th>학번</th><th>이름</th><th>반</th><th>누적점수</th><th>기준충족</th><th>제출서류</th></tr></thead><tbody id="skillMasterTableBody"></tbody></table></div>
+      </div>
+
+      <div id="set-accounts" class="subpanel">
+        <div class="toolbar">
+          <div><div class="section-title" style="margin-bottom:2px;">교사 계정 관리</div><p class="section-desc" style="margin:0;">한 계정에 담임·방과후·관리자 권한을 자유롭게 조합해 부여할 수 있습니다.</p></div>
+          <button class="btn btn-gold" onclick="openStaffModal()">+ 계정 추가</button>
+        </div>
+
+        <div class="section-title" style="font-size:15px; margin-top:4px;">가입 승인 대기</div>
+        <p class="section-desc" style="margin-bottom:10px;">교사가 직접 회원가입한 계정입니다. 승인 전에는 로그인해도 대기 화면만 표시됩니다.</p>
+        <div class="table-scroll" style="margin-bottom:28px;"><table><thead><tr><th>아이디</th><th>이름</th><th>신청일</th><th>처리</th></tr></thead><tbody id="pendingStaffTableBody"></tbody></table></div>
+
+        <div class="section-title" style="font-size:15px;">전체 계정</div>
+        <div class="table-scroll"><table><thead><tr><th>아이디</th><th>이름</th><th>권한</th><th>처리</th></tr></thead><tbody id="staffTableBody"></tbody></table></div>
+      </div>
+
+      <div id="set-deadline" class="subpanel">
+        <div class="section-title" style="margin-bottom:2px;">마감 설정</div>
+        <p class="section-desc">마감을 걸면 학생의 방과후 신청·자격증 제출과 담임교사의 신청 대리등록·기능장 서류 업로드·삭제가 모두 잠깁니다. 관리자 화면(방과후 관리·자격증 승인·학생 관리 등)은 마감과 무관하게 계속 이용할 수 있습니다.</p>
+        <div class="card">
+          <label class="checkbox-inline"><input type="checkbox" id="deadlineLockToggle"> 마감 처리하기 (학생·담임교사 수정 잠금)</label>
+          <label>안내 메시지 (선택)</label>
+          <input type="text" id="deadlineMessage" placeholder="예: 2026년 2학기 방과후 신청 및 자격증 제출이 마감되었습니다.">
+          <button class="btn btn-primary" style="margin-top:16px; width:auto;" onclick="saveDeadlineSettings()">저장하기</button>
+        </div>
+
+        <div class="section-title" style="font-size:15px; margin-top:24px;">방과후 신청 방식</div>
+        <p class="section-desc">단수신청으로 설정하면 학생 1명당 방과후 프로그램을 1개만 신청할 수 있습니다. (담임교사의 대리등록에도 동일하게 적용됩니다)</p>
+        <div class="card">
+          <label class="checkbox-inline" style="margin-top:0;"><input type="radio" name="enrollMode" id="enrollModeMulti" value="multi"> 복수신청 허용 (여러 프로그램에 신청 가능)</label>
+          <label class="checkbox-inline"><input type="radio" name="enrollMode" id="enrollModeSingle" value="single"> 단수신청 (학생 1명당 1개 프로그램만 신청 가능)</label>
+          <button class="btn btn-primary" style="margin-top:12px; width:auto;" onclick="saveEnrollModeSetting()">저장하기</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 모달들 ============ -->
+<div id="programModalBg" class="modal-bg">
+  <div class="modal">
+    <h3 id="programModalTitle">방과후 프로그램 개설</h3>
+    <input type="hidden" id="programEditId">
+    <label>프로그램명</label><input type="text" id="pmName" placeholder="예: 전산회계 자격 대비반">
+    <label>담당 교사(표시용)</label><input type="text" id="pmInstructor" placeholder="예: 홍길동">
+    <div class="grid-2">
+      <div><label>운영 요일/시간</label><input type="text" id="pmSchedule" placeholder="예: 화·목 16:30-18:00"></div>
+      <div><label>정원</label><input type="number" id="pmCapacity" placeholder="예: 25" min="1"></div>
+    </div>
+    <label>총 차시</label><input type="number" id="pmTotalSessions" placeholder="예: 10" min="1" value="10">
+    <label>설명</label><textarea id="pmDesc" rows="3" placeholder="프로그램 소개 (선택)"></textarea>
+    <div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal('programModalBg')">취소</button><button class="btn btn-primary" onclick="saveProgram()">저장</button></div>
+  </div>
+</div>
+
+<div id="rosterModalBg" class="modal-bg">
+  <div class="modal" style="max-width:640px;">
+    <h3 id="rosterModalTitle">신청자 명단</h3>
+    <div class="table-scroll"><table><thead><tr><th>학번</th><th>이름</th><th>반</th><th>신청일</th><th>확정</th><th>처리</th></tr></thead><tbody id="rosterTableBody"></tbody></table></div>
+    <div id="rosterEmpty" class="empty-state" style="display:none;">아직 신청자가 없습니다.</div>
+    <div class="modal-actions">
+      <button class="btn btn-gold" onclick="confirmAllRoster()">✓ 전체 확정하기</button>
+      <button class="btn btn-ghost" onclick="exportRosterExcel()">⬇ 엑셀로 내보내기</button>
+      <button class="btn btn-primary" onclick="closeModal('rosterModalBg')">닫기</button>
+    </div>
+  </div>
+</div>
+
+<div id="studentModalBg" class="modal-bg">
+  <div class="modal">
+    <h3 id="studentModalTitle">학생 추가</h3>
+    <input type="hidden" id="studentEditId">
+    <label>학번</label><input type="text" id="smStudentId" placeholder="예: 10305" inputmode="numeric">
+    <label>이름</label><input type="text" id="smName" placeholder="예: 김상업">
+    <label>반</label><select id="smClass"></select>
+    <label>PIN (4자리)</label><input type="text" id="smPin" placeholder="예: 1234" inputmode="numeric" maxlength="4">
+    <div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal('studentModalBg')">취소</button><button class="btn btn-primary" onclick="saveStudent()">저장</button></div>
+  </div>
+</div>
+
+<div id="certTypeModalBg" class="modal-bg">
+  <div class="modal">
+    <h3 id="certTypeModalTitle">자격증 종류 추가</h3>
+    <input type="hidden" id="certTypeEditId">
+    <label>자격증명</label><input type="text" id="ctName" placeholder="예: 전산회계운용사 2급">
+    <label>배점</label><input type="number" id="ctPoints" placeholder="예: 10" min="0">
+    <div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal('certTypeModalBg')">취소</button><button class="btn btn-primary" onclick="saveCertType()">저장</button></div>
+  </div>
+</div>
+
+<div id="staffModalBg" class="modal-bg">
+  <div class="modal">
+    <h3 id="staffModalTitle">계정 추가</h3>
+    <input type="hidden" id="staffEditId">
+    <label>아이디</label><input type="text" id="stfId" placeholder="로그인용 아이디 (영문/숫자 권장)">
+    <p style="font-size:11px; color:var(--ink-soft); margin:-10px 0 0;">아이디를 변경하면 기존 아이디는 더 이상 사용할 수 없습니다.</p>
+    <label>이름</label><input type="text" id="stfName" placeholder="예: 김상업">
+    <label>비밀번호</label><input type="text" id="stfPassword" placeholder="비밀번호">
+
+    <label class="checkbox-inline"><input type="checkbox" id="stfIsHomeroom" onchange="onStaffCapabilityChange()"> 담임교사 권한 부여</label>
+    <div id="stfHomeroomFields" style="display:none;"><label>담당 반</label><select id="stfClass"></select></div>
+
+    <label class="checkbox-inline"><input type="checkbox" id="stfIsProgram" onchange="onStaffCapabilityChange()"> 방과후교사 권한 부여</label>
+    <div id="stfProgramFields" style="display:none;"><label>담당 프로그램 (복수 선택 가능)</label><div class="checkbox-grid" id="stfProgramCheckboxes"></div></div>
+
+    <label class="checkbox-inline"><input type="checkbox" id="stfIsAdmin"> 관리자 권한 부여</label>
+
+    <div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal('staffModalBg')">취소</button><button class="btn btn-primary" onclick="saveStaff()">저장</button></div>
+  </div>
+</div>
+
+<div id="hrAddEnrollModalBg" class="modal-bg">
+  <div class="modal">
+    <h3>학생 신청 추가</h3>
+    <label>학생</label><select id="hrEnrollStudent"></select>
+    <label>프로그램</label><select id="hrEnrollProgram"></select>
+    <div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal('hrAddEnrollModalBg')">취소</button><button class="btn btn-primary" onclick="saveHrEnroll()">추가</button></div>
+  </div>
+</div>
+
+<div id="studentImportModalBg" class="modal-bg">
+  <div class="modal">
+    <h3>학생 명단 일괄 등록</h3>
+    <p class="section-desc" style="margin-bottom:14px;">엑셀 헤더는 <b>학번, 이름, 반, PIN</b> 순서를 권장합니다. 이미 등록된 학번은 정보가 덮어씌워집니다.</p>
+    <div id="importSummary"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('studentImportModalBg')">취소</button>
+      <button class="btn btn-primary" id="importConfirmBtn" onclick="confirmStudentImport()">일괄 등록하기</button>
+    </div>
+  </div>
+</div>
+
+<div id="myPwModalBg" class="modal-bg">
+  <div class="modal">
+    <h3>비밀번호 변경</h3>
+    <label>현재 비밀번호</label><input type="password" id="curTeacherPw">
+    <label>새 비밀번호</label><input type="password" id="newTeacherPw">
+    <label>새 비밀번호 확인</label><input type="password" id="confirmTeacherPw">
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('myPwModalBg')">취소</button>
+      <button class="btn btn-primary" onclick="changeMyTeacherPassword()">변경하기</button>
+    </div>
+  </div>
+</div>
+
+<div id="signupModalBg" class="modal-bg">
+  <div class="modal">
+    <h3>교사 계정 만들기</h3>
+    <p class="section-desc" style="margin-bottom:14px;">가입 신청 후 관리자 승인이 있어야 실제 업무 화면을 이용할 수 있습니다.</p>
+    <label>아이디</label><input type="text" id="suId" placeholder="사용하실 아이디 (영문/숫자 권장)">
+    <label>이름</label><input type="text" id="suName" placeholder="예: 김상업">
+    <label>비밀번호</label><input type="password" id="suPassword" placeholder="비밀번호">
+    <label>비밀번호 확인</label><input type="password" id="suPasswordConfirm" placeholder="비밀번호 확인">
+    <div id="signupErr" class="err-msg"></div>
+    <div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal('signupModalBg')">취소</button><button class="btn btn-primary" onclick="submitSignup()">가입 신청</button></div>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+/* =========================================================
+   ⚠ 설정: 본인의 Firebase 프로젝트 정보로 교체하세요.
+   Firestore + Storage를 모두 사용하므로 Firebase 콘솔에서
+   Firestore Database와 Storage를 둘 다 활성화해야 합니다.
+   ========================================================= */
+const firebaseConfig = {
+  apiKey: "AIzaSyCjPRa36Tgy0UyVDPL_GGcMIjmeana5ZCM",
+  authDomain: "afterschool-281ca.firebaseapp.com",
+  projectId: "afterschool-281ca",
+  storageBucket: "afterschool-281ca.firebasestorage.app",
+  messagingSenderId: "1034832234632",
+  appId: "1:1034832234632:web:4047b862bb232c3ca3373d",
+  measurementId: "G-113PRSRW6P"
+};
+
+/* ⚠ 최초 부트스트랩용 관리자 계정 - 실제 사용 전 반드시 변경하세요.
+   이 계정으로 로그인해 첫 번째 실제 교사 계정(들)을 만든 뒤,
+   실무에서는 실명 계정을 사용하는 것을 권장합니다. */
+const SUPER_ADMIN_ID = "admin";
+const SUPER_ADMIN_PASSWORD = "JOYOUNGLONG2026";
+
+/* 학년-반 자동 생성 (1~3학년, 각 10반) */
+const CLASS_LIST = (function(){
+  const list = [];
+  for (let g=1; g<=3; g++) for (let c=1; c<=10; c++) list.push(`${g}학년 ${c}반`);
+  return list;
+})();
+
+const ATT_STATUSES = [
+  {code:'present', label:'출석'}, {code:'late', label:'지각'},
+  {code:'absent', label:'결석'}, {code:'excused', label:'공결'}
+];
+const ATT_LABEL = {present:'출석', late:'지각', absent:'결석', excused:'공결'};
+const ATT_SHORT = {present:'출', late:'지', absent:'결', excused:'공'};
+const SKILL_THRESHOLD = 35;
+
+let db = null;
+let currentStudent = null;
+let currentStaff = null; // {id, name, isAdmin, homeroomClass, programIds, password}
+let cache = { students:[], programs:[], enrollments:[], certificates:[], certTypes:[], staff:[], attendance:[], skillDocs:[], programMessages:[], settings:{locked:false, lockMessage:'', singleEnroll:false} };
+let todayAttendance = {};
+
+/* ---------- Firebase 초기화 ---------- */
+function initFirebase(){
+  try{
+    if (firebaseConfig.apiKey === "YOUR_API_KEY") { document.getElementById('setupBanner').style.display = 'block'; return false; }
+    firebase.initializeApp(firebaseConfig);
+    db = firebase.firestore();
+    populateClassSelects();
+    return true;
+  } catch(e){ console.error(e); document.getElementById('setupBanner').style.display = 'block'; return false; }
+}
+function populateClassSelects(){
+  const opts = CLASS_LIST.map(c=>`<option value="${c}">${c}</option>`).join('');
+  ['smClass','stfClass'].forEach(id=>{ const el = document.getElementById(id); if (el) el.innerHTML = opts; });
+}
+
+/* ---------- 유틸 ---------- */
+function esc(str){ if (str===null||str===undefined) return ''; return String(str).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function showToast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2200); }
+function withTimeout(promise, ms){
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => setTimeout(() => reject(new Error('upload-timeout')), ms))
+  ]);
+}
+function todayStr(){ return new Date().toISOString().split('T')[0]; }
+function statusLabel(s){ return {pending:'승인대기', approved:'승인완료', rejected:'반려'}[s] || s; }
+function statusStampClass(s){ return {pending:'stamp-pending', approved:'stamp-approved', rejected:'stamp-rejected'}[s] || ''; }
+function getStudentPoints(studentId){ return cache.certificates.filter(c=>c.studentId===studentId && c.status==='approved').reduce((sum,c)=>sum+(Number(c.points)||0),0); }
+
+/* ---------- 로그인 / 화면 전환 ---------- */
+const ROLE_FORM_IDS = ['student','teacher'];
+function switchRole(role){
+  ROLE_FORM_IDS.forEach(r=>{
+    document.getElementById('roleBtn-'+r).classList.toggle('active', r===role);
+    document.getElementById('form-'+r).style.display = (r===role) ? 'block' : 'none';
+  });
+  document.getElementById('loginErr').style.display = 'none';
+}
+function showLoginError(msg){ const el=document.getElementById('loginErr'); el.textContent=msg; el.style.display='block'; }
+
+async function studentLogin(){
+  const id = document.getElementById('loginStudentId').value.trim();
+  const pin = document.getElementById('loginPin').value.trim();
+  if (!id || !pin) return showLoginError('학번과 PIN을 모두 입력하세요.');
+  if (!db) return showLoginError('Firebase 설정이 완료되지 않았습니다.');
+  try{
+    const doc = await db.collection('students').doc(id).get();
+    if (!doc.exists) return showLoginError('등록되지 않은 학번입니다. 담당 선생님께 문의하세요.');
+    const data = doc.data();
+    if (String(data.pin) !== pin) return showLoginError('PIN이 일치하지 않습니다.');
+    currentStudent = { id, ...data };
+    await loadAllData();
+    document.getElementById('loginScreen').style.display='none';
+    document.getElementById('studentApp').style.display='block';
+    document.getElementById('studentChipName').textContent = `${data.class} ${data.name}`;
+    renderCertTypeOptions(); renderStudentPrograms(); renderConfirmedClasses(); renderMyStatus(); applyLockBanners();
+  } catch(e){ console.error(e); showLoginError('로그인 중 오류가 발생했습니다.'); }
+}
+
+async function teacherLogin(){
+  const id = document.getElementById('loginTeacherId').value.trim();
+  const pw = document.getElementById('loginTeacherPw').value;
+  if (!id || !pw) return showLoginError('아이디와 비밀번호를 입력하세요.');
+  if (!db) return showLoginError('Firebase 설정이 완료되지 않았습니다.');
+  try{
+    let staffData;
+    if (id === SUPER_ADMIN_ID && pw === SUPER_ADMIN_PASSWORD){
+      staffData = { id, name:'관리자', isAdmin:true, homeroomClass:'', programIds:[], status:'approved' };
+    } else {
+      const doc = await db.collection('staff').doc(id).get();
+      if (!doc.exists) return showLoginError('등록되지 않은 계정입니다.');
+      const data = doc.data();
+      if (data.password !== pw) return showLoginError('비밀번호가 일치하지 않습니다.');
+      if (data.status === 'rejected') return showLoginError('가입 신청이 거절되었습니다. 관리자에게 문의하세요.');
+      staffData = { id, ...data };
+    }
+    currentStaff = staffData;
+
+    if (staffData.status === 'pending'){
+      document.getElementById('loginScreen').style.display='none';
+      document.getElementById('pendingScreen').style.display='flex';
+      document.getElementById('pendingScreenName').textContent = staffData.name;
+      return;
+    }
+
+    await loadAllData();
+    document.getElementById('loginScreen').style.display='none';
+    document.getElementById('teacherApp').style.display='block';
+    renderTeacherHome();
+  } catch(e){ console.error(e); showLoginError('로그인 중 오류가 발생했습니다.'); }
+}
+
+function openSignupModal(){
+  document.getElementById('suId').value=''; document.getElementById('suName').value='';
+  document.getElementById('suPassword').value=''; document.getElementById('suPasswordConfirm').value='';
+  document.getElementById('signupErr').style.display='none';
+  document.getElementById('signupModalBg').classList.add('active');
+}
+
+async function submitSignup(){
+  const id = document.getElementById('suId').value.trim();
+  const name = document.getElementById('suName').value.trim();
+  const pw = document.getElementById('suPassword').value;
+  const pw2 = document.getElementById('suPasswordConfirm').value;
+  const errEl = document.getElementById('signupErr');
+  errEl.style.display = 'none';
+  if (!id || !name || !pw){ errEl.textContent='아이디, 이름, 비밀번호를 모두 입력하세요.'; errEl.style.display='block'; return; }
+  if (pw !== pw2){ errEl.textContent='비밀번호가 서로 일치하지 않습니다.'; errEl.style.display='block'; return; }
+  if (id === SUPER_ADMIN_ID){ errEl.textContent='사용할 수 없는 아이디입니다.'; errEl.style.display='block'; return; }
+  if (!db){ errEl.textContent='Firebase 설정이 완료되지 않았습니다.'; errEl.style.display='block'; return; }
+  try{
+    const doc = await db.collection('staff').doc(id).get();
+    if (doc.exists){ errEl.textContent='이미 사용 중인 아이디입니다.'; errEl.style.display='block'; return; }
+    const data = { name, password: pw, isAdmin:false, homeroomClass:'', programIds:[], status:'pending', requestedAt: new Date().toISOString() };
+    await db.collection('staff').doc(id).set(data);
+    closeModal('signupModalBg');
+    currentStaff = { id, ...data };
+    document.getElementById('loginScreen').style.display='none';
+    document.getElementById('pendingScreen').style.display='flex';
+    document.getElementById('pendingScreenName').textContent = name;
+  } catch(e){ console.error(e); errEl.textContent='가입 신청 중 오류가 발생했습니다.'; errEl.style.display='block'; }
+}
+
+function logout(){
+  currentStudent = null; currentStaff = null;
+  document.getElementById('studentApp').style.display='none';
+  document.getElementById('teacherApp').style.display='none';
+  document.getElementById('pendingScreen').style.display='none';
+  document.getElementById('loginScreen').style.display='flex';
+  document.getElementById('loginStudentId').value=''; document.getElementById('loginPin').value='';
+  document.getElementById('loginTeacherId').value=''; document.getElementById('loginTeacherPw').value='';
+}
+
+function openMyPwModal(){
+  document.getElementById('curTeacherPw').value=''; document.getElementById('newTeacherPw').value=''; document.getElementById('confirmTeacherPw').value='';
+  document.getElementById('myPwModalBg').classList.add('active');
+}
+async function changeMyTeacherPassword(){
+  const cur = document.getElementById('curTeacherPw').value;
+  const next = document.getElementById('newTeacherPw').value;
+  const confirmPw = document.getElementById('confirmTeacherPw').value;
+  if (currentStaff.id === SUPER_ADMIN_ID && !cache.staff.find(s=>s.id===SUPER_ADMIN_ID)){
+    return showToast('부트스트랩 관리자 계정은 코드에서만 변경할 수 있습니다. 관리자 설정에서 본인 명의 계정을 새로 만들어 사용해주세요.');
+  }
+  if (cur !== currentStaff.password) return showToast('현재 비밀번호가 일치하지 않습니다.');
+  if (!next) return showToast('새 비밀번호를 입력하세요.');
+  if (next !== confirmPw) return showToast('새 비밀번호가 서로 일치하지 않습니다.');
+  try{
+    await db.collection('staff').doc(currentStaff.id).update({ password: next });
+    currentStaff.password = next;
+    showToast('비밀번호가 변경되었습니다.');
+    closeModal('myPwModalBg');
+  } catch(e){ console.error(e); showToast('변경 중 오류가 발생했습니다.'); }
+}
+
+function switchTab(btn, panelId){
+  const parent = btn.closest('.wrap');
+  parent.querySelectorAll(':scope > .tabbar > .tab-btn').forEach(b=>b.classList.remove('active'));
+  parent.querySelectorAll(':scope > .panel').forEach(p=>p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById(panelId).classList.add('active');
+  const ptBar = document.getElementById('ptProgramBar');
+  if (ptBar) ptBar.style.display = panelId.startsWith('p-') ? 'flex' : 'none';
+}
+function switchSubTab(btn, panelId){
+  const parent = btn.closest('.panel');
+  parent.querySelectorAll('.subtab-btn').forEach(b=>b.classList.remove('active'));
+  parent.querySelectorAll('.subpanel').forEach(p=>p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById(panelId).classList.add('active');
+}
+function closeModal(id){ document.getElementById(id).classList.remove('active'); }
+
+/* ---------- 데이터 로드 (역할별 범위 제한) ---------- */
+async function fetchFullCache(){
+  const [studentsSnap, programsSnap, enrollSnap, certSnap, certTypeSnap, staffSnap, attSnap, skillSnap, settingsSnap, msgSnap] = await Promise.all([
+    db.collection('students').get(), db.collection('programs').get(), db.collection('enrollments').get(),
+    db.collection('certificates').get(), db.collection('certTypes').get(), db.collection('staff').get(),
+    db.collection('attendance').get(), db.collection('skillDocs').get(), db.collection('settings').doc('global').get(),
+    db.collection('programMessages').get()
+  ]);
+  cache.students = studentsSnap.docs.map(d=>({id:d.id, ...d.data()}));
+  cache.programs = programsSnap.docs.map(d=>({id:d.id, ...d.data()}));
+  cache.enrollments = enrollSnap.docs.map(d=>({id:d.id, ...d.data()}));
+  cache.certificates = certSnap.docs.map(d=>({id:d.id, ...d.data()}));
+  cache.certTypes = certTypeSnap.docs.map(d=>({id:d.id, ...d.data()}));
+  cache.staff = staffSnap.docs.map(d=>({id:d.id, ...d.data()}));
+  cache.attendance = attSnap.docs.map(d=>({id:d.id, ...d.data()}));
+  cache.skillDocs = skillSnap.docs.map(d=>({id:d.id, ...d.data()}));
+  cache.programMessages = msgSnap.docs.map(d=>({id:d.id, ...d.data()}));
+  cache.settings = settingsSnap.exists ? settingsSnap.data() : { locked:false, lockMessage:'', singleEnroll:false };
+}
+
+/* 관리자 권한이 없는 교사: 본인이 배정된 반/프로그램 데이터만 서버에서 조회 */
+async function fetchScopedTeacherCache(){
+  cache = { students:[], programs:[], enrollments:[], certificates:[], certTypes:[], staff:[], attendance:[], skillDocs:[], programMessages:[], settings:{locked:false, lockMessage:'', singleEnroll:false} };
+  let programsResult = [];
+  let enrollResults = [];
+  let settingsResult = { locked:false, lockMessage:'', singleEnroll:false };
+  const tasks = [];
+
+  tasks.push(db.collection('settings').doc('global').get().then(s=>{ if (s.exists) settingsResult = s.data(); }));
+
+  if (currentStaff.homeroomClass){
+    tasks.push(db.collection('students').where('class','==',currentStaff.homeroomClass).get().then(s=>{ cache.students = s.docs.map(d=>({id:d.id, ...d.data()})); }));
+    tasks.push(db.collection('enrollments').where('class','==',currentStaff.homeroomClass).get().then(s=>{ enrollResults = enrollResults.concat(s.docs.map(d=>({id:d.id, ...d.data()}))); }));
+    tasks.push(db.collection('certificates').where('class','==',currentStaff.homeroomClass).get().then(s=>{ cache.certificates = s.docs.map(d=>({id:d.id, ...d.data()})); }));
+    tasks.push(db.collection('skillDocs').where('class','==',currentStaff.homeroomClass).get().then(s=>{ cache.skillDocs = s.docs.map(d=>({id:d.id, ...d.data()})); }));
+    // 담임은 학생을 어느 방과후 프로그램에든 등록해줄 수 있어야 하므로 프로그램 목록(이름 표시용)만 전체 조회
+    tasks.push(db.collection('programs').get().then(s=>{ programsResult = s.docs.map(d=>({id:d.id, ...d.data()})); }));
+  }
+
+  if (currentStaff.programIds && currentStaff.programIds.length){
+    const pids = currentStaff.programIds.slice(0,30); // Firestore 'in' 쿼리 최대 30개
+    tasks.push(db.collection('enrollments').where('programId','in', pids).get().then(s=>{ enrollResults = enrollResults.concat(s.docs.map(d=>({id:d.id, ...d.data()}))); }));
+    tasks.push(db.collection('attendance').where('programId','in', pids).get().then(s=>{ cache.attendance = s.docs.map(d=>({id:d.id, ...d.data()})); }));
+    tasks.push(db.collection('programMessages').where('programId','in', pids).get().then(s=>{ cache.programMessages = s.docs.map(d=>({id:d.id, ...d.data()})); }));
+    if (!currentStaff.homeroomClass){
+      tasks.push(db.collection('programs').where(firebase.firestore.FieldPath.documentId(),'in', pids).get().then(s=>{ programsResult = s.docs.map(d=>({id:d.id, ...d.data()})); }));
+    }
+  }
+
+  await Promise.all(tasks);
+  cache.programs = programsResult;
+  cache.settings = settingsResult;
+  const seen = new Set();
+  cache.enrollments = enrollResults.filter(e=>{ if (seen.has(e.id)) return false; seen.add(e.id); return true; });
+}
+
+async function loadAllData(){
+  if (currentStaff && currentStaff.isAdmin){ await fetchFullCache(); return; }
+  if (currentStaff && !currentStaff.isAdmin){ await fetchScopedTeacherCache(); return; }
+  await fetchFullCache(); // 학생 로그인 - 프로그램 정원 표시 등을 위해 전체 조회 유지
+}
+
+/* =========================================================
+   교사 홈 - 권한별 탭 동적 구성
+   ========================================================= */
+function renderTeacherHome(){
+  const badges = [];
+  if (currentStaff.homeroomClass) badges.push(`담임(${currentStaff.homeroomClass})`);
+  if (currentStaff.programIds && currentStaff.programIds.length) badges.push('방과후교사');
+  if (currentStaff.isAdmin) badges.push('관리자');
+  document.getElementById('teacherChipInfo').textContent = `${currentStaff.name}${badges.length ? ' · '+badges.join(' · ') : ''}`;
+
+  const tabs = [];
+  if (currentStaff.homeroomClass){
+    tabs.push({panel:'h-demand', label:'방과후 수요조사'});
+    tabs.push({panel:'h-skilldoc', label:'기능장 서류 제출'});
+    tabs.push({panel:'h-certdocs', label:'자격증 서류 확인'});
+  }
+  if (currentStaff.programIds && currentStaff.programIds.length){
+    tabs.push({panel:'p-check', label:'출석 체크'});
+    tabs.push({panel:'p-view', label:'출석부 조회·출력'});
+    tabs.push({panel:'p-notice', label:'공지 전달'});
+  }
+  if (currentStaff.isAdmin){
+    tabs.push({panel:'t-stats', label:'통계'});
+    tabs.push({panel:'t-programs', label:'방과후 관리'});
+    tabs.push({panel:'t-certs', label:'자격증 관리'});
+    tabs.push({panel:'t-students', label:'학생 관리'});
+    tabs.push({panel:'t-settings', label:'관리자 설정'});
+  }
+
+  const bar = document.getElementById('teacherTabbar');
+  bar.innerHTML = tabs.map((t,i)=>`<button class="tab-btn ${i===0?'active':''}" data-panel="${t.panel}" onclick="switchTab(this,'${t.panel}')">${t.label}</button>`).join('');
+
+  document.querySelectorAll('#teacherApp .panel').forEach(p=>p.classList.remove('active'));
+  const ptBar = document.getElementById('ptProgramBar');
+  if (tabs.length){
+    document.getElementById(tabs[0].panel).classList.add('active');
+    if (ptBar) ptBar.style.display = tabs[0].panel.startsWith('p-') ? 'flex' : 'none';
+  } else if (ptBar) ptBar.style.display = 'none';
+
+  if (currentStaff.homeroomClass){ renderHrDemand(); renderHrSkillDocs(); renderHrCertDocs(); }
+  if (currentStaff.programIds && currentStaff.programIds.length){
+    populatePtProgramSelect();
+    document.getElementById('ptCheckDate').value = todayStr();
+    document.getElementById('ptViewMonth').value = todayStr().slice(0,7);
+    renderAttendanceCheck(); renderAttendanceGrid(); renderNoticeList();
+  }
+  if (currentStaff.isAdmin){
+    renderTeacherPrograms(); renderTeacherCerts(); renderStudentTable(); renderStats();
+    populateClassFilter(); renderCertTypeTable(); renderSkillMasterTable(); renderStaffTable(); renderPendingStaffTable(); populateSkillClassFilter();
+    renderDeadlineSettings();
+    renderEnrollModeSetting();
+  }
+  applyLockBanners();
+}
+
+/* =========================================================
+   학생 화면
+   ========================================================= */
+function renderCertTypeOptions(){
+  const sel = document.getElementById('certTypeSelect');
+  sel.innerHTML = `<option value="">선택하세요</option>` + cache.certTypes.map(ct=>`<option value="${ct.id}">${esc(ct.name)} (${ct.points}점)</option>`).join('');
+}
+function renderStudentPrograms(){
+  const container = document.getElementById('programList');
+  const locked = !!(cache.settings && cache.settings.locked);
+  const singleMode = !!(cache.settings && cache.settings.singleEnroll);
+  const myAnyEnroll = cache.enrollments.find(e=>e.studentId===currentStudent.id);
+  if (cache.programs.length===0){ container.innerHTML = `<div class="empty-state"><div class="big">개설된 프로그램이 없습니다</div>선생님이 프로그램을 개설하면 여기에 표시됩니다.</div>`; return; }
+  container.innerHTML = cache.programs.map(p=>{
+    const enrolledCount = cache.enrollments.filter(e=>e.programId===p.id).length;
+    const myEnroll = cache.enrollments.find(e=>e.programId===p.id && e.studentId===currentStudent.id);
+    const full = p.capacity && enrolledCount >= Number(p.capacity);
+    let actionHtml;
+    if (myEnroll) actionHtml = `<span class="stamp stamp-approved">신청완료</span>`;
+    else if (locked) actionHtml = `<button class="btn btn-ghost btn-sm" disabled>마감됨</button>`;
+    else if (singleMode && myAnyEnroll) actionHtml = `<button class="btn btn-ghost btn-sm" disabled>단수신청 제한</button>`;
+    else if (full) actionHtml = `<button class="btn btn-ghost btn-sm" disabled>정원마감</button>`;
+    else actionHtml = `<button class="btn btn-primary btn-sm" onclick="applyProgram('${p.id}')">신청하기</button>`;
+    return `
+      <div class="card"><div class="card-row">
+        <div><div class="program-name">${esc(p.name)}</div><div class="meta-line">담당: ${esc(p.instructor||'-')} · ${esc(p.schedule||'-')} · 총 ${p.totalSessions||10}차시</div>${p.description?`<div class="meta-line">${esc(p.description)}</div>`:''}</div>
+        <div style="text-align:right;"><div class="capacity-tag">${enrolledCount}${p.capacity?' / '+p.capacity:''}명</div>
+          <div style="margin-top:10px;">${actionHtml}</div>
+        </div>
+      </div></div>`;
+  }).join('');
+  if (singleMode && myAnyEnroll){
+    container.innerHTML = `<div class="setup-banner" style="background:var(--gold-soft); color:var(--navy); border-color:var(--gold);">⚠ 단수신청 기간입니다. 다른 프로그램을 신청하려면 "내 현황" 탭에서 기존 신청을 먼저 취소해주세요.</div>` + container.innerHTML;
+  }
+}
+async function applyProgram(programId){
+  if (cache.settings && cache.settings.locked) return showToast(cache.settings.lockMessage || '마감되어 더 이상 신청할 수 없습니다.');
+  if (cache.settings && cache.settings.singleEnroll){
+    const already = cache.enrollments.find(e=>e.studentId===currentStudent.id);
+    if (already) return showToast('단수신청 기간입니다. 이미 신청한 프로그램이 있어 추가로 신청할 수 없습니다.');
+  }
+  const program = cache.programs.find(p=>p.id===programId);
+  if (!program) return;
+  if (cache.enrollments.find(e=>e.programId===programId && e.studentId===currentStudent.id)) return showToast('이미 신청한 프로그램입니다.');
+  try{
+    await db.collection('enrollments').add({ studentId: currentStudent.id, studentName: currentStudent.name, class: currentStudent.class, programId, programName: program.name, appliedAt: new Date().toISOString(), addedBy:'self', adminConfirmed:false, studentConfirmed:false });
+    showToast('신청이 완료되었습니다.'); await loadAllData(); renderStudentPrograms(); renderConfirmedClasses();
+  } catch(e){ console.error(e); showToast('신청 중 오류가 발생했습니다.'); }
+}
+async function submitCert(){
+  if (cache.settings && cache.settings.locked) return showToast(cache.settings.lockMessage || '마감되어 더 이상 제출할 수 없습니다.');
+  const certTypeId = document.getElementById('certTypeSelect').value;
+  const level = document.getElementById('certLevel').value.trim();
+  const issuer = document.getElementById('certIssuer').value.trim();
+  const date = document.getElementById('certDate').value;
+  const certNumber = document.getElementById('certNumber').value.trim();
+  const note = document.getElementById('certNote').value.trim();
+  const proofFile = document.getElementById('certProofFile').files[0];
+  if (!certTypeId || !date) return showToast('자격증 종류와 취득일은 필수입니다.');
+  const ct = cache.certTypes.find(c=>c.id===certTypeId);
+  if (!ct) return showToast('자격증 종류를 다시 선택해주세요.');
+  if (proofFile && proofFile.type !== 'application/pdf') return showToast('증빙 파일은 PDF만 첨부할 수 있습니다.');
+
+  const data = { studentId: currentStudent.id, studentName: currentStudent.name, class: currentStudent.class, certTypeId, certName: ct.name, points: Number(ct.points)||0, level, issuer, acquiredDate: date, certNumber, note, status:'pending', submittedAt: new Date().toISOString() };
+  let uploadFailed = false;
+
+  if (proofFile){
+    showToast('증빙 파일 업로드 중입니다...');
+    try{
+      const path = `certdocs/${currentStudent.class}/${currentStudent.id}_${Date.now()}_${proofFile.name}`;
+      const ref = firebase.storage().ref().child(path);
+      await withTimeout(ref.put(proofFile), 20000);
+      data.proofURL = await withTimeout(ref.getDownloadURL(), 10000);
+      data.proofFileName = proofFile.name;
+      data.proofStoragePath = path;
+    } catch(e){
+      console.error('파일 업로드 실패:', e);
+      uploadFailed = true;
+    }
+  }
+
+  try{
+    await db.collection('certificates').add(data);
+    showToast(uploadFailed ? '자격증은 제출되었지만 파일 업로드는 실패했습니다. Storage 설정을 확인해주세요.' : '제출이 완료되었습니다. 선생님 검토를 기다려주세요.');
+    document.getElementById('certTypeSelect').value=''; document.getElementById('certLevel').value=''; document.getElementById('certIssuer').value=''; document.getElementById('certDate').value=''; document.getElementById('certNumber').value=''; document.getElementById('certNote').value=''; document.getElementById('certProofFile').value='';
+    await loadAllData(); renderMyStatus();
+  } catch(e){ console.error(e); showToast('제출 중 오류가 발생했습니다. Storage 설정을 확인하세요.'); }
+}
+async function changeMyPin(){
+  const cur = document.getElementById('curPin').value.trim();
+  const next = document.getElementById('newPin').value.trim();
+  const confirmPin = document.getElementById('confirmPin').value.trim();
+  if (cur !== String(currentStudent.pin)) return showToast('현재 PIN이 일치하지 않습니다.');
+  if (!/^\d{4}$/.test(next)) return showToast('새 PIN은 숫자 4자리로 입력하세요.');
+  if (next !== confirmPin) return showToast('새 PIN이 서로 일치하지 않습니다.');
+  try{
+    await db.collection('students').doc(currentStudent.id).update({ pin: next });
+    currentStudent.pin = next;
+    showToast('PIN이 변경되었습니다.');
+    document.getElementById('curPin').value=''; document.getElementById('newPin').value=''; document.getElementById('confirmPin').value='';
+  } catch(e){ console.error(e); showToast('변경 중 오류가 발생했습니다.'); }
+}
+
+function renderConfirmedClasses(){
+  const myEnroll = cache.enrollments.filter(e=>e.studentId===currentStudent.id).sort((a,b)=>(b.appliedAt||'').localeCompare(a.appliedAt||''));
+  const locked = !!(cache.settings && cache.settings.locked);
+  const container = document.getElementById('myEnrollments');
+  if (myEnroll.length===0){ container.innerHTML = `<div class="empty-state"><div class="big">신청한 방과후 프로그램이 없습니다</div>"방과후 신청(수요조사)" 탭에서 먼저 신청해주세요.</div>`; return; }
+  container.innerHTML = myEnroll.map(e=>{
+    const needsConfirm = e.adminConfirmed && !e.studentConfirmed;
+    let statusHtml;
+    if (e.studentConfirmed) statusHtml = `<span class="stamp stamp-approved">참여 확정 완료</span>`;
+    else if (e.adminConfirmed) statusHtml = `<span class="stamp stamp-pending">확정됨 · 참여 확인 필요</span>`;
+    else statusHtml = `<span class="stamp stamp-neutral">확정 대기중</span>`;
+
+    const notices = e.studentConfirmed ? cache.programMessages.filter(m=>m.programId===e.programId).sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||'')) : [];
+    const noticesHtml = e.studentConfirmed ? `
+      <div style="margin-top:14px; padding-top:14px; border-top:1px solid var(--line);">
+        <div style="font-size:12px; font-weight:700; color:var(--ink-soft); margin-bottom:8px;">💬 선생님 전달사항 ${notices.length ? `(${notices.length})` : ''}</div>
+        ${notices.length===0 ? `<div style="font-size:12.5px; color:var(--ink-soft);">아직 전달사항이 없습니다.</div>`
+          : notices.map(m=>`<div style="background:var(--navy-soft); border-radius:8px; padding:10px 12px; margin-bottom:8px;">
+              <div style="font-size:13px; color:var(--ink); white-space:pre-wrap;">${esc(m.content)}</div>
+              <div style="font-size:11px; color:var(--ink-soft); margin-top:6px;">${esc(m.senderName||'담당 선생님')} · ${esc((m.createdAt||'').replace('T',' ').slice(0,16))}</div>
+            </div>`).join('')}
+      </div>` : '';
+
+    return `
+      <div class="card" style="padding:14px 18px; ${needsConfirm ? 'border-color:var(--gold); background:var(--gold-soft);' : ''}">
+        <div class="card-row" style="align-items:center;">
+          <div><div class="program-name" style="font-size:14px;">${esc(e.programName)}</div><div class="meta-line">신청일: ${esc((e.appliedAt||'').split('T')[0])}</div></div>
+          ${statusHtml}
+        </div>
+        <div style="display:flex; gap:8px; margin-top:10px; justify-content:flex-end;">
+          ${needsConfirm ? `<button class="btn btn-gold btn-sm" onclick="confirmMyParticipation('${e.id}')">참여 확정하기</button>` : ''}
+          ${locked ? '' : `<button class="btn btn-danger btn-sm" onclick="cancelMyEnrollment('${e.id}')">신청 취소</button>`}
+        </div>
+        ${noticesHtml}
+      </div>`;
+  }).join('');
+}
+function renderMyStatus(){
+  const myCerts = cache.certificates.filter(c=>c.studentId===currentStudent.id).sort((a,b)=>(b.submittedAt||'').localeCompare(a.submittedAt||''));
+  document.getElementById('myPoints').textContent = getStudentPoints(currentStudent.id);
+  document.getElementById('myCerts').innerHTML = myCerts.length===0 ? `<div class="empty-state">제출한 자격증이 없습니다.</div>`
+    : myCerts.map(c=>`<div class="card" style="padding:14px 18px;"><div class="card-row"><div><div class="program-name" style="font-size:14px;">${esc(c.certName)} ${c.level?'· '+esc(c.level):''} <span class="mono" style="font-size:11px; color:var(--ink-soft);">(${c.points}점)</span></div><div class="meta-line">${esc(c.issuer||'-')} · 취득일 ${esc(c.acquiredDate)}${c.certNumber?' · 취득번호 '+esc(c.certNumber):''}</div>${c.proofURL?`<div class="doc-link" style="margin-top:4px;" onclick="window.open('${c.proofURL}','_blank')">📎 ${esc(c.proofFileName||'첨부파일')}</div>`:''}</div><span class="stamp ${statusStampClass(c.status)}">${statusLabel(c.status)}</span></div></div>`).join('');
+}
+async function confirmMyParticipation(id){
+  if (!confirm('이 방과후 수업 참여를 확정하시겠습니까?')) return;
+  try{
+    await db.collection('enrollments').doc(id).update({ studentConfirmed:true, studentConfirmedAt: new Date().toISOString() });
+    showToast('참여가 확정되었습니다.');
+    await loadAllData(); renderConfirmedClasses();
+  } catch(e){ console.error(e); showToast('처리 중 오류가 발생했습니다.'); }
+}
+async function cancelMyEnrollment(id){
+  if (cache.settings && cache.settings.locked) return showToast(cache.settings.lockMessage || '마감되어 신청을 취소할 수 없습니다.');
+  if (!confirm('이 신청을 취소하시겠습니까?')) return;
+  try{
+    await db.collection('enrollments').doc(id).delete();
+    showToast('취소되었습니다.');
+    await loadAllData(); renderStudentPrograms(); renderConfirmedClasses();
+  } catch(e){ console.error(e); showToast('취소 중 오류가 발생했습니다.'); }
+}
+
+/* =========================================================
+   담임 영역
+   ========================================================= */
+function renderHrDemand(){
+  const list = cache.enrollments.filter(e=>e.class===currentStaff.homeroomClass).sort((a,b)=>(b.appliedAt||'').localeCompare(a.appliedAt||''));
+  const tbody = document.getElementById('hrDemandTableBody');
+  const locked = !!(cache.settings && cache.settings.locked);
+  const addBtn = document.getElementById('hrAddEnrollBtn');
+  if (addBtn) addBtn.disabled = locked;
+  if (list.length===0){ tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state">신청 내역이 없습니다.</div></td></tr>`; return; }
+  tbody.innerHTML = list.map(e=>`<tr><td class="mono">${esc(e.studentId)}</td><td>${esc(e.studentName)}</td><td>${esc(e.programName)}</td><td class="mono">${esc((e.appliedAt||'').split('T')[0])}</td><td>${e.addedBy==='homeroom'?'담임 등록':'학생 신청'}</td><td>${locked?`<button class="btn btn-ghost btn-sm" disabled>마감됨</button>`:`<button class="btn btn-danger btn-sm" onclick="hrRemoveEnroll('${e.id}')">삭제</button>`}</td></tr>`).join('');
+}
+async function hrRemoveEnroll(id){
+  if (cache.settings && cache.settings.locked) return showToast(cache.settings.lockMessage || '마감되어 더 이상 수정할 수 없습니다.');
+  if (!confirm('이 신청 내역을 삭제하시겠습니까?')) return;
+  try{ await db.collection('enrollments').doc(id).delete(); showToast('삭제되었습니다.'); await loadAllData(); renderHrDemand(); }
+  catch(e){ console.error(e); showToast('삭제 중 오류가 발생했습니다.'); }
+}
+function openHrAddEnrollModal(){
+  if (cache.settings && cache.settings.locked) return showToast(cache.settings.lockMessage || '마감되어 더 이상 등록할 수 없습니다.');
+  const myStudents = cache.students.filter(s=>s.class===currentStaff.homeroomClass).sort((a,b)=>a.id.localeCompare(b.id));
+  document.getElementById('hrEnrollStudent').innerHTML = myStudents.length ? myStudents.map(s=>`<option value="${s.id}">${esc(s.id)} ${esc(s.name)}</option>`).join('') : `<option value="">등록된 학생이 없습니다</option>`;
+  document.getElementById('hrEnrollProgram').innerHTML = cache.programs.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join('');
+  document.getElementById('hrAddEnrollModalBg').classList.add('active');
+}
+async function saveHrEnroll(){
+  if (cache.settings && cache.settings.locked) return showToast(cache.settings.lockMessage || '마감되어 더 이상 등록할 수 없습니다.');
+  const studentId = document.getElementById('hrEnrollStudent').value;
+  const programId = document.getElementById('hrEnrollProgram').value;
+  if (!studentId || !programId) return showToast('학생과 프로그램을 선택하세요.');
+  if (cache.settings && cache.settings.singleEnroll){
+    const already = cache.enrollments.find(e=>e.studentId===studentId);
+    if (already) return showToast('단수신청 설정이라 이미 신청된 학생은 다른 프로그램에 추가할 수 없습니다. 먼저 기존 신청을 삭제해주세요.');
+  }
+  const student = cache.students.find(s=>s.id===studentId);
+  const program = cache.programs.find(p=>p.id===programId);
+  if (cache.enrollments.find(e=>e.studentId===studentId && e.programId===programId)) return showToast('이미 신청된 학생입니다.');
+  try{
+    await db.collection('enrollments').add({ studentId, studentName: student.name, class: student.class, programId, programName: program.name, appliedAt: new Date().toISOString(), addedBy:'homeroom', adminConfirmed:false, studentConfirmed:false });
+    showToast('추가되었습니다.'); closeModal('hrAddEnrollModalBg'); await loadAllData(); renderHrDemand();
+  } catch(e){ console.error(e); showToast('추가 중 오류가 발생했습니다.'); }
+}
+function renderHrSkillDocs(){
+  const myStudents = cache.students.filter(s=>s.class===currentStaff.homeroomClass).sort((a,b)=>a.id.localeCompare(b.id));
+  const tbody = document.getElementById('hrSkillTableBody');
+  const locked = !!(cache.settings && cache.settings.locked);
+  if (myStudents.length===0){ tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state">등록된 학생이 없습니다.</div></td></tr>`; return; }
+  tbody.innerHTML = myStudents.map(s=>{
+    const pts = getStudentPoints(s.id); const eligible = pts >= SKILL_THRESHOLD;
+    const docs = cache.skillDocs.filter(d=>d.studentId===s.id);
+    return `<tr><td class="mono">${esc(s.id)}</td><td>${esc(s.name)}</td><td class="mono">${pts}점</td>
+      <td>${eligible?`<span class="stamp stamp-approved">충족</span>`:`<span class="stamp stamp-neutral">미충족</span>`}</td>
+      <td>${docs.length===0?`<span style="color:var(--ink-soft); font-size:12px;">미제출</span>`:docs.map(d=>`<div class="doc-link" onclick="window.open('${d.downloadURL}','_blank')">${esc(d.fileName)}</div>`).join('')}</td>
+      <td>${locked?`<span style="font-size:12px; color:var(--ink-soft);">마감됨</span>`:`<label class="file-btn">파일 선택<input type="file" accept="application/pdf" onchange="hrUploadSkillDoc(event,'${s.id}','${esc(s.name)}','${esc(s.class)}')"></label>`}</td></tr>`;
+  }).join('');
+}
+async function hrUploadSkillDoc(evt, studentId, studentName, studentClass){
+  if (cache.settings && cache.settings.locked){ showToast(cache.settings.lockMessage || '마감되어 더 이상 업로드할 수 없습니다.'); evt.target.value=''; return; }
+  const file = evt.target.files[0]; if (!file) return;
+  if (file.type !== 'application/pdf') return showToast('PDF 파일만 업로드할 수 있습니다.');
+  showToast('업로드 중입니다...');
+  try{
+    const path = `skilldocs/${studentClass}/${studentId}_${Date.now()}_${file.name}`;
+    const ref = firebase.storage().ref().child(path);
+    await withTimeout(ref.put(file), 20000);
+    const url = await withTimeout(ref.getDownloadURL(), 10000);
+    await db.collection('skillDocs').add({ studentId, studentName, class: studentClass, fileName: file.name, storagePath: path, downloadURL: url, uploadedAt: new Date().toISOString(), uploadedBy: currentStaff.id });
+    showToast('업로드가 완료되었습니다.'); await loadAllData(); renderHrSkillDocs();
+  } catch(e){ console.error(e); showToast('업로드 중 오류가 발생했습니다. Storage 설정을 확인하세요.'); }
+  evt.target.value = '';
+}
+function exportHrDemandExcel(){
+  const rows = cache.enrollments.filter(e=>e.class===currentStaff.homeroomClass).map(e=>({'학번':e.studentId,'이름':e.studentName,'프로그램':e.programName,'신청일':(e.appliedAt||'').split('T')[0],'등록방식':e.addedBy==='homeroom'?'담임 등록':'학생 신청'}));
+  if (rows.length===0) return showToast('내보낼 데이터가 없습니다.');
+  exportToExcel(rows, `${currentStaff.homeroomClass}_방과후수요조사`);
+}
+function renderHrCertDocs(){
+  const list = cache.certificates.filter(c=>c.class===currentStaff.homeroomClass).sort((a,b)=>(b.submittedAt||'').localeCompare(a.submittedAt||''));
+  const tbody = document.getElementById('hrCertDocsTableBody');
+  if (!tbody) return;
+  if (list.length===0){ tbody.innerHTML = `<tr><td colspan="8"><div class="empty-state">제출된 자격증이 없습니다.</div></td></tr>`; return; }
+  tbody.innerHTML = list.map(c=>`
+    <tr>
+      <td class="mono">${esc(c.studentId)}</td><td>${esc(c.studentName)}</td><td>${esc(c.certName)}</td><td>${esc(c.level)}</td>
+      <td class="mono">${esc(c.acquiredDate)}</td><td class="mono">${esc(c.certNumber||'-')}</td>
+      <td><span class="stamp ${statusStampClass(c.status)}">${statusLabel(c.status)}</span></td>
+      <td>${c.proofURL ? `<span class="doc-link" onclick="window.open('${c.proofURL}','_blank')">📎 ${esc(c.proofFileName||'다운로드')}</span>` : `<span style="color:var(--ink-soft); font-size:12px;">미첨부</span>`}</td>
+    </tr>`).join('');
+}
+function downloadHrCertDocs(){
+  const docs = cache.certificates.filter(c=>c.class===currentStaff.homeroomClass && c.proofURL).map(c=>({
+    downloadURL: c.proofURL, fileName: c.proofFileName || `${c.certName}.pdf`, studentId: c.studentId, studentName: c.studentName, class: c.class
+  }));
+  downloadZip(docs, `${currentStaff.homeroomClass}_자격증서류`);
+}
+
+/* =========================================================
+   방과후교사 영역
+   ========================================================= */
+function populatePtProgramSelect(){
+  const myPrograms = cache.programs.filter(p=>(currentStaff.programIds||[]).includes(p.id));
+  const sel = document.getElementById('ptProgramSelect');
+  sel.innerHTML = myPrograms.length ? myPrograms.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join('') : `<option value="">배정된 프로그램이 없습니다</option>`;
+}
+function onPtProgramChange(){ renderAttendanceCheck(); renderAttendanceGrid(); renderNoticeList(); }
+function getCurrentPtProgramId(){ return document.getElementById('ptProgramSelect').value; }
+function getPtRoster(){ const programId = getCurrentPtProgramId(); return cache.enrollments.filter(e=>e.programId===programId).sort((a,b)=>a.studentId.localeCompare(b.studentId)); }
+
+function renderAttendanceCheck(){
+  const date = document.getElementById('ptCheckDate').value || todayStr();
+  const programId = getCurrentPtProgramId();
+  const program = cache.programs.find(p=>p.id===programId);
+  const totalSessions = program ? (program.totalSessions || 10) : 10;
+  const roster = getPtRoster();
+  todayAttendance = {};
+  roster.forEach(s=>{ const existing = cache.attendance.find(a=>a.programId===programId && a.date===date && a.studentId===s.studentId); todayAttendance[s.studentId] = existing ? existing.status : 'present'; });
+
+  const allDates = [...new Set(cache.attendance.filter(a=>a.programId===programId).map(a=>a.date))].sort();
+  let sessionIdx = allDates.indexOf(date);
+  if (sessionIdx === -1) sessionIdx = allDates.length;
+  const sessionNumber = sessionIdx + 1;
+  const progressEl = document.getElementById('sessionProgressInfo');
+  if (progressEl){
+    progressEl.textContent = programId ? `이번 체크: ${sessionNumber}차시 (총 ${totalSessions}차시 중)` : '';
+  }
+
+  const container = document.getElementById('attendanceCheckList');
+  if (roster.length===0){ container.innerHTML = `<div class="empty-state">신청한 학생이 없습니다.</div>`; return; }
+  container.innerHTML = roster.map(s=>`
+    <div class="card" style="padding:12px 16px;"><div class="card-row" style="align-items:center;">
+      <div><span style="font-weight:700;">${esc(s.studentName)}</span> <span class="mono meta-line">${esc(s.studentId)} · ${esc(s.class)}</span></div>
+      <div class="att-btn-group" data-student="${s.studentId}">${ATT_STATUSES.map(st=>`<button type="button" class="att-btn" data-code="${st.code}" onclick="setAttStatus('${s.studentId}','${st.code}')">${st.label}</button>`).join('')}</div>
+    </div></div>`).join('');
+  refreshAttButtons();
+}
+function setAttStatus(studentId, code){ todayAttendance[studentId] = code; refreshAttButtons(); }
+function refreshAttButtons(){
+  document.querySelectorAll('.att-btn-group').forEach(group=>{
+    const sid = group.getAttribute('data-student');
+    group.querySelectorAll('.att-btn').forEach(btn=>{ const code = btn.getAttribute('data-code'); btn.className = 'att-btn' + (todayAttendance[sid]===code ? ' sel-'+code : ''); });
+  });
+}
+async function saveAttendance(){
+  const date = document.getElementById('ptCheckDate').value || todayStr();
+  const programId = getCurrentPtProgramId();
+  const program = cache.programs.find(p=>p.id===programId);
+  const roster = getPtRoster();
+  if (roster.length===0) return showToast('저장할 학생이 없습니다.');
+  try{
+    await Promise.all(roster.map(s=>{
+      const docId = `${programId}_${date}_${s.studentId}`;
+      return db.collection('attendance').doc(docId).set({ programId, programName: program?program.name:'', date, studentId: s.studentId, studentName: s.studentName, class: s.class, status: todayAttendance[s.studentId]||'present' });
+    }));
+    showToast('출석이 저장되었습니다.'); await loadAllData(); renderAttendanceGrid();
+  } catch(e){ console.error(e); showToast('저장 중 오류가 발생했습니다.'); }
+}
+function getDaysInMonth(monthStr){
+  const [y, m] = monthStr.split('-').map(Number);
+  const lastDay = new Date(y, m, 0).getDate();
+  const days = [];
+  for (let d=1; d<=lastDay; d++) days.push(`${monthStr}-${String(d).padStart(2,'0')}`);
+  return days;
+}
+function renderAttendanceGrid(){
+  const month = document.getElementById('ptViewMonth').value || todayStr().slice(0,7);
+  const programId = getCurrentPtProgramId();
+  const program = cache.programs.find(p=>p.id===programId);
+  const totalSessions = program ? (program.totalSessions || 10) : 10;
+  document.getElementById('printTitle').textContent = `${program?program.name:''} 출석부 (${month}) · 총 ${totalSessions}차시`;
+  const roster = getPtRoster();
+  const allDates = [...new Set(cache.attendance.filter(a=>a.programId===programId).map(a=>a.date))].sort();
+  const monthDates = getDaysInMonth(month);
+  const table = document.getElementById('attendanceGridTable');
+  if (roster.length===0){ table.innerHTML = `<tr><td><div class="empty-state">신청한 학생이 없습니다.</div></td></tr>`; return; }
+  let thead = `<thead><tr><th>학번</th><th>이름</th>${monthDates.map(d=>{
+    const sessionIdx = allDates.indexOf(d);
+    const sessionLabel = sessionIdx!==-1 ? `<div style="color:var(--gold); font-size:11px;">${sessionIdx+1}차시</div>` : '';
+    return `<th>${sessionLabel}<div>${d.slice(8)}</div></th>`;
+  }).join('')}</tr></thead>`;
+  let tbody = `<tbody>` + roster.map(s=>{
+    const cells = monthDates.map(d=>{ const rec = cache.attendance.find(a=>a.programId===programId && a.studentId===s.studentId && a.date===d); return `<td class="mono" style="text-align:center;">${rec?ATT_SHORT[rec.status]:'-'}</td>`; }).join('');
+    return `<tr><td class="mono">${esc(s.studentId)}</td><td>${esc(s.studentName)}</td>${cells}</tr>`;
+  }).join('') + `</tbody>`;
+  table.innerHTML = thead + tbody;
+}
+function exportAttendanceExcel(){
+  const month = document.getElementById('ptViewMonth').value || todayStr().slice(0,7);
+  const programId = getCurrentPtProgramId();
+  const roster = getPtRoster();
+  const allDates = [...new Set(cache.attendance.filter(a=>a.programId===programId).map(a=>a.date))].sort();
+  const monthDates = getDaysInMonth(month);
+  if (roster.length===0) return showToast('내보낼 데이터가 없습니다.');
+  const aoa = [['학번','이름', ...monthDates.map(d=>{ const idx=allDates.indexOf(d); return idx!==-1 ? `${idx+1}차시(${d.slice(5)})` : d.slice(5); })]];
+  roster.forEach(s=>{ const row=[s.studentId,s.studentName]; monthDates.forEach(d=>{ const rec = cache.attendance.find(a=>a.programId===programId && a.studentId===s.studentId && a.date===d); row.push(rec?ATT_LABEL[rec.status]:''); }); aoa.push(row); });
+  const ws = XLSX.utils.aoa_to_sheet(aoa);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Sheet1');
+  XLSX.writeFile(wb, `출석부_${month}_${todayStr()}.xlsx`);
+  showToast('엑셀 파일이 다운로드되었습니다.');
+}
+
+/* ---------- 방과후 공지(쪽지) 전달 ---------- */
+async function sendProgramNotice(){
+  const programId = getCurrentPtProgramId();
+  const program = cache.programs.find(p=>p.id===programId);
+  const content = document.getElementById('noticeContent').value.trim();
+  if (!programId) return showToast('담당 프로그램을 먼저 선택하세요.');
+  if (!content) return showToast('전달할 내용을 입력하세요.');
+  try{
+    await db.collection('programMessages').add({
+      programId, programName: program ? program.name : '', senderId: currentStaff.id, senderName: currentStaff.name,
+      content, createdAt: new Date().toISOString()
+    });
+    showToast('전달사항이 등록되었습니다.');
+    document.getElementById('noticeContent').value = '';
+    await loadAllData(); renderNoticeList();
+  } catch(e){ console.error(e); showToast('등록 중 오류가 발생했습니다.'); }
+}
+function renderNoticeList(){
+  const listEl = document.getElementById('noticeList');
+  if (!listEl) return;
+  const programId = getCurrentPtProgramId();
+  const notices = cache.programMessages.filter(m=>m.programId===programId).sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||''));
+  if (notices.length===0){ listEl.innerHTML = `<div class="empty-state">보낸 전달사항이 없습니다.</div>`; return; }
+  listEl.innerHTML = notices.map(m=>`
+    <div class="card" style="padding:12px 16px;">
+      <div class="card-row" style="align-items:flex-start;">
+        <div style="white-space:pre-wrap; font-size:13.5px;">${esc(m.content)}</div>
+        <button class="btn btn-danger btn-sm" onclick="deleteProgramNotice('${m.id}')">삭제</button>
+      </div>
+      <div class="meta-line" style="margin-top:6px;">${esc((m.createdAt||'').replace('T',' ').slice(0,16))}</div>
+    </div>`).join('');
+}
+async function deleteProgramNotice(id){
+  if (!confirm('이 전달사항을 삭제하시겠습니까?')) return;
+  try{ await db.collection('programMessages').doc(id).delete(); showToast('삭제되었습니다.'); await loadAllData(); renderNoticeList(); }
+  catch(e){ console.error(e); showToast('삭제 중 오류가 발생했습니다.'); }
+}
+
+/* =========================================================
+   관리자 영역
+   ========================================================= */
+function renderStats(){
+  document.getElementById('statTotalStudents').textContent = cache.students.length;
+  document.getElementById('statTotalPrograms').textContent = cache.programs.length;
+  document.getElementById('statTotalEnroll').textContent = cache.enrollments.length;
+  document.getElementById('statPendingCerts').textContent = cache.certificates.filter(c=>c.status==='pending').length;
+  document.getElementById('statSkillEligible').textContent = cache.students.filter(s=>getStudentPoints(s.id)>=SKILL_THRESHOLD).length;
+  const progCounts = cache.programs.map(p=>({label:p.name, count:cache.enrollments.filter(e=>e.programId===p.id).length})).sort((a,b)=>b.count-a.count);
+  renderBarChart('programBarChart', progCounts);
+  const certMap = {};
+  cache.certificates.filter(c=>c.status==='approved').forEach(c=>{ certMap[c.certName]=(certMap[c.certName]||0)+1; });
+  renderBarChart('certBarChart', Object.entries(certMap).map(([label,count])=>({label,count})).sort((a,b)=>b.count-a.count));
+  populateStatsProgramFilter();
+  renderAllEnrollmentsTable();
+}
+function populateStatsProgramFilter(){
+  const sel = document.getElementById('statsProgramFilter');
+  if (!sel) return;
+  sel.innerHTML = `<option value="">전체 프로그램</option>` + cache.programs.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join('');
+}
+function renderAllEnrollmentsTable(){
+  const tbody = document.getElementById('allEnrollmentsTableBody');
+  if (!tbody) return;
+  const programFilter = document.getElementById('statsProgramFilter').value;
+  const confirmFilter = document.getElementById('statsConfirmFilter').value;
+  const nameSearch = document.getElementById('statsSearchName').value.trim().toLowerCase();
+  let list = [...cache.enrollments];
+  if (programFilter) list = list.filter(e=>e.programId===programFilter);
+  if (confirmFilter === 'unconfirmed') list = list.filter(e=>!e.adminConfirmed);
+  else if (confirmFilter === 'adminConfirmed') list = list.filter(e=>e.adminConfirmed && !e.studentConfirmed);
+  else if (confirmFilter === 'fullyConfirmed') list = list.filter(e=>e.studentConfirmed);
+  if (nameSearch) list = list.filter(e=>(e.studentName||'').toLowerCase().includes(nameSearch));
+  list.sort((a,b)=>(b.appliedAt||'').localeCompare(a.appliedAt||''));
+
+  if (list.length===0){ tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state">조건에 맞는 신청 내역이 없습니다.</div></td></tr>`; return; }
+  tbody.innerHTML = list.map(e=>`
+    <tr>
+      <td class="mono">${esc(e.studentId)}</td><td>${esc(e.studentName)}</td><td>${esc(e.class)}</td><td>${esc(e.programName)}</td>
+      <td class="mono">${esc((e.appliedAt||'').split('T')[0])}</td>
+      <td>${e.adminConfirmed ? `<span class="stamp stamp-approved">확정</span>` : `<span class="stamp stamp-neutral">대기</span>`}</td>
+      <td>${e.studentConfirmed ? `<span class="stamp stamp-approved">확정완료</span>` : `<span class="stamp stamp-neutral">대기</span>`}</td>
+    </tr>`).join('');
+}
+function exportAllEnrollmentsExcel(){
+  const programFilter = document.getElementById('statsProgramFilter').value;
+  const confirmFilter = document.getElementById('statsConfirmFilter').value;
+  let list = [...cache.enrollments];
+  if (programFilter) list = list.filter(e=>e.programId===programFilter);
+  if (confirmFilter === 'unconfirmed') list = list.filter(e=>!e.adminConfirmed);
+  else if (confirmFilter === 'adminConfirmed') list = list.filter(e=>e.adminConfirmed && !e.studentConfirmed);
+  else if (confirmFilter === 'fullyConfirmed') list = list.filter(e=>e.studentConfirmed);
+  if (list.length===0) return showToast('내보낼 데이터가 없습니다.');
+  const rows = list.map(e=>({'학번':e.studentId,'이름':e.studentName,'반':e.class,'프로그램':e.programName,'신청일':(e.appliedAt||'').split('T')[0],'관리자확정':e.adminConfirmed?'확정':'대기','학생참여확정':e.studentConfirmed?'확정':'대기'}));
+  exportToExcel(rows, '전체_방과후신청명단');
+}
+function renderBarChart(containerId, items){
+  const el = document.getElementById(containerId);
+  if (items.length===0){ el.innerHTML = `<div class="empty-state" style="padding:16px;">표시할 데이터가 없습니다.</div>`; return; }
+  const max = Math.max(...items.map(i=>i.count),1);
+  el.innerHTML = items.map(i=>`<div class="bar-row"><div class="bar-label">${esc(i.label)}</div><div class="bar-track"><div class="bar-fill" style="width:${(i.count/max*100)}%;"></div></div><div class="bar-count">${i.count}</div></div>`).join('');
+}
+
+function renderTeacherPrograms(){
+  const el = document.getElementById('teacherProgramList');
+  if (cache.programs.length===0){ el.innerHTML = `<div class="empty-state"><div class="big">개설된 프로그램이 없습니다</div>상단의 '프로그램 개설' 버튼으로 시작하세요.</div>`; return; }
+  el.innerHTML = cache.programs.map(p=>{
+    const count = cache.enrollments.filter(e=>e.programId===p.id).length;
+    const totalSessions = p.totalSessions || 10;
+    const doneSessions = new Set(cache.attendance.filter(a=>a.programId===p.id).map(a=>a.date)).size;
+    return `<div class="card"><div class="card-row">
+      <div><div class="program-name">${esc(p.name)}</div><div class="meta-line">담당: ${esc(p.instructor||'-')} · ${esc(p.schedule||'-')} · 정원 ${esc(p.capacity||'-')}명</div><div class="meta-line">진행 ${doneSessions} / 총 ${totalSessions}차시</div></div>
+      <div style="display:flex; gap:6px; align-items:center;"><span class="capacity-tag">신청 ${count}명</span>
+        <button class="btn btn-ghost btn-sm" onclick="viewRoster('${p.id}')">명단 보기</button>
+        <button class="btn btn-ghost btn-sm" onclick="openProgramModal('${p.id}')">수정</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteProgram('${p.id}')">삭제</button></div>
+    </div></div>`;
+  }).join('');
+}
+function openProgramModal(id){
+  document.getElementById('programEditId').value = id || '';
+  document.getElementById('programModalTitle').textContent = id ? '프로그램 수정' : '방과후 프로그램 개설';
+  if (id){ const p = cache.programs.find(x=>x.id===id);
+    document.getElementById('pmName').value=p.name||''; document.getElementById('pmInstructor').value=p.instructor||'';
+    document.getElementById('pmSchedule').value=p.schedule||''; document.getElementById('pmCapacity').value=p.capacity||'';
+    document.getElementById('pmTotalSessions').value = p.totalSessions || 10;
+    document.getElementById('pmDesc').value=p.description||'';
+  } else {
+    ['pmName','pmInstructor','pmSchedule','pmCapacity','pmDesc'].forEach(i=>document.getElementById(i).value='');
+    document.getElementById('pmTotalSessions').value = 10;
+  }
+  document.getElementById('programModalBg').classList.add('active');
+}
+async function saveProgram(){
+  const id = document.getElementById('programEditId').value;
+  const data = { name: document.getElementById('pmName').value.trim(), instructor: document.getElementById('pmInstructor').value.trim(), schedule: document.getElementById('pmSchedule').value.trim(), capacity: document.getElementById('pmCapacity').value.trim(), totalSessions: Number(document.getElementById('pmTotalSessions').value) || 10, description: document.getElementById('pmDesc').value.trim() };
+  if (!data.name) return showToast('프로그램명을 입력하세요.');
+  try{
+    if (id) await db.collection('programs').doc(id).update(data); else await db.collection('programs').add(data);
+    showToast('저장되었습니다.'); closeModal('programModalBg'); await loadAllData(); renderTeacherPrograms(); renderStats();
+  } catch(e){ console.error(e); showToast('저장 중 오류가 발생했습니다.'); }
+}
+async function deleteProgram(id){
+  if (!confirm('이 프로그램을 삭제하시겠습니까? 관련 신청/출석 내역은 유지됩니다.')) return;
+  try{ await db.collection('programs').doc(id).delete(); showToast('삭제되었습니다.'); await loadAllData(); renderTeacherPrograms(); renderStats(); }
+  catch(e){ console.error(e); showToast('삭제 중 오류가 발생했습니다.'); }
+}
+let currentRosterProgramId = null;
+function viewRoster(programId){
+  currentRosterProgramId = programId;
+  const p = cache.programs.find(x=>x.id===programId);
+  document.getElementById('rosterModalTitle').textContent = `${p.name} · 신청자 명단`;
+  const roster = cache.enrollments.filter(e=>e.programId===programId);
+  const tbody = document.getElementById('rosterTableBody'); const emptyEl = document.getElementById('rosterEmpty');
+  if (roster.length===0){ tbody.innerHTML=''; emptyEl.style.display='block'; }
+  else{ emptyEl.style.display='none'; tbody.innerHTML = roster.map(e=>`
+    <tr>
+      <td class="mono">${esc(e.studentId)}</td><td>${esc(e.studentName)}</td><td>${esc(e.class)}</td><td class="mono">${esc((e.appliedAt||'').split('T')[0])}</td>
+      <td>${e.adminConfirmed ? `<span class="stamp stamp-approved">확정</span>` : `<button class="btn btn-sm" style="background:var(--green-soft); color:var(--green);" onclick="adminConfirmEnrollment('${e.id}', true)">확정하기</button>`}</td>
+      <td>${e.adminConfirmed ? `<button class="btn btn-ghost btn-sm" onclick="adminConfirmEnrollment('${e.id}', false)">확정 취소</button>` : ''} <button class="btn btn-danger btn-sm" onclick="removeEnrollment('${e.id}')">삭제</button></td>
+    </tr>`).join(''); }
+  document.getElementById('rosterModalBg').classList.add('active');
+}
+async function adminConfirmEnrollment(enrollId, confirmed){
+  try{
+    const data = confirmed ? { adminConfirmed:true, adminConfirmedAt: new Date().toISOString() } : { adminConfirmed:false, studentConfirmed:false };
+    await db.collection('enrollments').doc(enrollId).update(data);
+    showToast(confirmed ? '확정되었습니다. 학생에게 참여 확정 알림이 표시됩니다.' : '확정이 취소되었습니다.');
+    await loadAllData(); viewRoster(currentRosterProgramId); renderTeacherPrograms(); renderStats();
+  } catch(e){ console.error(e); showToast('처리 중 오류가 발생했습니다.'); }
+}
+async function confirmAllRoster(){
+  const roster = cache.enrollments.filter(e=>e.programId===currentRosterProgramId && !e.adminConfirmed);
+  if (roster.length===0) return showToast('확정할 신청 건이 없습니다.');
+  if (!confirm(`이 프로그램의 미확정 신청자 ${roster.length}명을 모두 확정 처리하시겠습니까?`)) return;
+  try{
+    const batch = db.batch();
+    roster.forEach(e=> batch.update(db.collection('enrollments').doc(e.id), { adminConfirmed:true, adminConfirmedAt: new Date().toISOString() }));
+    await batch.commit();
+    showToast(`${roster.length}명이 확정되었습니다.`);
+    await loadAllData(); viewRoster(currentRosterProgramId); renderTeacherPrograms(); renderStats();
+  } catch(e){ console.error(e); showToast('처리 중 오류가 발생했습니다.'); }
+}
+async function removeEnrollment(enrollId){
+  if (!confirm('이 신청을 취소 처리하시겠습니까?')) return;
+  try{ await db.collection('enrollments').doc(enrollId).delete(); showToast('신청이 취소되었습니다.'); await loadAllData(); viewRoster(currentRosterProgramId); renderTeacherPrograms(); renderStats(); }
+  catch(e){ console.error(e); showToast('처리 중 오류가 발생했습니다.'); }
+}
+function exportRosterExcel(){
+  const roster = cache.enrollments.filter(e=>e.programId===currentRosterProgramId);
+  const p = cache.programs.find(x=>x.id===currentRosterProgramId);
+  exportToExcel(roster.map(e=>({'학번':e.studentId,'이름':e.studentName,'반':e.class,'신청일':(e.appliedAt||'').split('T')[0],'관리자확정':e.adminConfirmed?'확정':'대기','학생참여확정':e.studentConfirmed?'확정':'대기'})), `${p?p.name:'프로그램'}_신청자명단`);
+}
+
+function populateClassFilter(){
+  document.getElementById('certFilterClass').innerHTML = `<option value="">전체 반</option>` + CLASS_LIST.map(c=>`<option value="${c}">${c}</option>`).join('');
+}
+function renderTeacherCerts(){
+  const statusFilter = document.getElementById('certFilterStatus').value;
+  const classFilter = document.getElementById('certFilterClass').value;
+  const nameSearch = document.getElementById('certSearchName').value.trim().toLowerCase();
+  let list = [...cache.certificates];
+  if (statusFilter) list = list.filter(c=>c.status===statusFilter);
+  if (classFilter) list = list.filter(c=>c.class===classFilter);
+  if (nameSearch) list = list.filter(c=>(c.studentName||'').toLowerCase().includes(nameSearch));
+  list.sort((a,b)=>(b.submittedAt||'').localeCompare(a.submittedAt||''));
+  const tbody = document.getElementById('certTableBody'); const emptyEl = document.getElementById('certEmptyState');
+  if (list.length===0){ tbody.innerHTML=''; emptyEl.innerHTML = `<div class="empty-state">조건에 맞는 제출 내역이 없습니다.</div>`; return; }
+  emptyEl.innerHTML='';
+  tbody.innerHTML = list.map(c=>`<tr><td class="mono">${esc(c.studentId)}</td><td>${esc(c.studentName)}</td><td>${esc(c.class)}</td><td>${esc(c.certName)}</td><td>${esc(c.level)}</td><td>${esc(c.issuer)}</td><td class="mono">${esc(c.acquiredDate)}</td><td class="mono">${esc(c.certNumber||'-')}</td><td>${c.proofURL?`<span class="doc-link" onclick="window.open('${c.proofURL}','_blank')">📎 보기</span>`:'<span style="color:var(--ink-soft); font-size:12px;">-</span>'}</td><td class="mono">${c.points||0}</td><td><span class="stamp ${statusStampClass(c.status)}">${statusLabel(c.status)}</span></td>
+    <td>${c.status!=='approved'?`<button class="btn btn-sm" style="background:var(--green-soft); color:var(--green);" onclick="updateCertStatus('${c.id}','approved')">승인</button>`:''} ${c.status!=='rejected'?`<button class="btn btn-danger btn-sm" onclick="updateCertStatus('${c.id}','rejected')">반려</button>`:''}</td></tr>`).join('');
+}
+async function updateCertStatus(id, status){
+  try{ await db.collection('certificates').doc(id).update({ status, reviewedAt: new Date().toISOString() }); showToast(status==='approved'?'승인 처리되었습니다.':'반려 처리되었습니다.'); await loadAllData(); renderTeacherCerts(); renderStats(); renderSkillMasterTable(); }
+  catch(e){ console.error(e); showToast('처리 중 오류가 발생했습니다.'); }
+}
+function exportCertsExcel(){
+  const statusFilter = document.getElementById('certFilterStatus').value; const classFilter = document.getElementById('certFilterClass').value;
+  let list = [...cache.certificates];
+  if (statusFilter) list = list.filter(c=>c.status===statusFilter);
+  if (classFilter) list = list.filter(c=>c.class===classFilter);
+  const rows = list.map(c=>({'학번':c.studentId,'이름':c.studentName,'반':c.class,'자격증명':c.certName,'급수':c.level,'발급기관':c.issuer,'취득일':c.acquiredDate,'취득번호':c.certNumber||'','첨부파일':c.proofURL?'첨부됨':'미첨부','배점':c.points||0,'상태':statusLabel(c.status),'비고':c.note||''}));
+  if (rows.length===0) return showToast('내보낼 데이터가 없습니다.');
+  exportToExcel(rows, '자격증_취득현황');
+}
+
+function renderStudentTable(){
+  const search = document.getElementById('studentSearch').value.trim().toLowerCase();
+  let list = [...cache.students];
+  if (search) list = list.filter(s=> s.id.toLowerCase().includes(search) || (s.name||'').toLowerCase().includes(search));
+  list.sort((a,b)=>a.id.localeCompare(b.id));
+  const tbody = document.getElementById('studentTableBody');
+  if (list.length===0){ tbody.innerHTML = `<tr><td colspan="5"><div class="empty-state">등록된 학생이 없습니다.</div></td></tr>`; return; }
+  tbody.innerHTML = list.map(s=>`<tr><td class="mono">${esc(s.id)}</td><td>${esc(s.name)}</td><td>${esc(s.class)}</td><td class="mono">${esc(s.pin)}</td><td><button class="btn btn-ghost btn-sm" onclick="openStudentModal('${s.id}')">수정</button> <button class="btn btn-danger btn-sm" onclick="deleteStudent('${s.id}')">삭제</button></td></tr>`).join('');
+}
+function openStudentModal(id){
+  document.getElementById('studentEditId').value = id || '';
+  document.getElementById('studentModalTitle').textContent = id ? '학생 정보 수정' : '학생 추가';
+  const idInput = document.getElementById('smStudentId');
+  if (id){ const s = cache.students.find(x=>x.id===id); idInput.value=s.id; idInput.disabled=true; document.getElementById('smName').value=s.name||''; document.getElementById('smClass').value=s.class||''; document.getElementById('smPin').value=s.pin||''; }
+  else{ idInput.disabled=false; document.getElementById('smStudentId').value=''; document.getElementById('smName').value=''; document.getElementById('smPin').value=''; document.getElementById('smClass').value=CLASS_LIST[0]; }
+  document.getElementById('studentModalBg').classList.add('active');
+}
+async function saveStudent(){
+  const id = document.getElementById('smStudentId').value.trim();
+  const data = { name: document.getElementById('smName').value.trim(), class: document.getElementById('smClass').value, pin: document.getElementById('smPin').value.trim() };
+  if (!id || !data.name || !data.pin) return showToast('학번, 이름, PIN은 필수입니다.');
+  if (!/^\d{4}$/.test(data.pin)) return showToast('PIN은 숫자 4자리로 입력하세요.');
+  try{ await db.collection('students').doc(id).set(data); showToast('저장되었습니다.'); closeModal('studentModalBg'); await loadAllData(); renderStudentTable(); renderStats(); }
+  catch(e){ console.error(e); showToast('저장 중 오류가 발생했습니다.'); }
+}
+async function deleteStudent(id){
+  if (!confirm('이 학생 정보를 삭제하시겠습니까?')) return;
+  try{ await db.collection('students').doc(id).delete(); showToast('삭제되었습니다.'); await loadAllData(); renderStudentTable(); renderStats(); }
+  catch(e){ console.error(e); showToast('삭제 중 오류가 발생했습니다.'); }
+}
+
+/* ---------- 학생 엑셀 일괄 등록 ---------- */
+let pendingStudentImport = [];
+
+function downloadStudentTemplate(){
+  exportToExcel([{'학번':'10101','이름':'홍길동','반':'1학년 1반','PIN':'1234'}], '학생명단_업로드양식');
+}
+
+function handleStudentExcelUpload(evt){
+  const file = evt.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e){
+    try{
+      const data = new Uint8Array(e.target.result);
+      const wb = XLSX.read(data, {type:'array'});
+      const sheet = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(sheet, {defval:''});
+      processStudentImportRows(rows);
+    } catch(err){ console.error(err); showToast('엑셀 파일을 읽는 중 오류가 발생했습니다.'); }
+  };
+  reader.readAsArrayBuffer(file);
+  evt.target.value = '';
+}
+
+function processStudentImportRows(rows){
+  const valid = []; const errors = []; const seenIds = new Set();
+  rows.forEach((row, idx)=>{
+    const rowNum = idx + 2;
+    const id = String(row['학번'] ?? '').trim();
+    const name = String(row['이름'] ?? '').trim();
+    const cls = String(row['반'] ?? '').trim();
+    let pin = String(row['PIN'] !== undefined && row['PIN'] !== '' ? row['PIN'] : (row['pin'] ?? '')).trim();
+    if (pin && /^\d{1,4}$/.test(pin)) pin = pin.padStart(4,'0');
+
+    if (!id || !name || !cls || !pin){ errors.push(`${rowNum}행: 필수값 누락 (학번/이름/반/PIN 중 하나 이상 비어있음)`); return; }
+    if (!/^\d{4}$/.test(pin)){ errors.push(`${rowNum}행 (${id}): PIN이 숫자 4자리가 아닙니다`); return; }
+    if (seenIds.has(id)){ errors.push(`${rowNum}행 (${id}): 파일 내 학번 중복`); return; }
+    seenIds.add(id);
+    valid.push({ id, name, class: cls, pin });
+  });
+
+  pendingStudentImport = valid;
+  document.getElementById('importSummary').innerHTML = `
+    <div class="meta-line">전체 ${rows.length}행 중 <b>${valid.length}건</b> 등록 가능, <b>${errors.length}건</b> 오류</div>
+    ${errors.length ? `<div style="max-height:180px; overflow-y:auto; margin-top:10px; padding:10px; background:var(--red-soft); border-radius:8px; font-size:12px; color:var(--red);">${errors.map(e=>`<div>${esc(e)}</div>`).join('')}</div>` : ''}
+  `;
+  document.getElementById('importConfirmBtn').disabled = valid.length === 0;
+  document.getElementById('studentImportModalBg').classList.add('active');
+}
+
+async function confirmStudentImport(){
+  if (pendingStudentImport.length === 0) return;
+  showToast('등록 중입니다...');
+  try{
+    const chunks = [];
+    for (let i=0; i<pendingStudentImport.length; i+=450) chunks.push(pendingStudentImport.slice(i, i+450));
+    for (const chunk of chunks){
+      const batch = db.batch();
+      chunk.forEach(s=>{ const ref = db.collection('students').doc(s.id); batch.set(ref, { name: s.name, class: s.class, pin: s.pin }); });
+      await batch.commit();
+    }
+    showToast(`${pendingStudentImport.length}명이 등록되었습니다.`);
+    pendingStudentImport = [];
+    closeModal('studentImportModalBg');
+    await loadAllData(); renderStudentTable(); renderStats();
+  } catch(e){ console.error(e); showToast('일괄 등록 중 오류가 발생했습니다.'); }
+}
+
+function renderCertTypeTable(){
+  const tbody = document.getElementById('certTypeTableBody');
+  if (cache.certTypes.length===0){ tbody.innerHTML = `<tr><td colspan="3"><div class="empty-state">등록된 자격증 종류가 없습니다.</div></td></tr>`; return; }
+  tbody.innerHTML = cache.certTypes.map(ct=>`<tr><td>${esc(ct.name)}</td><td class="mono">${ct.points}점</td><td><button class="btn btn-ghost btn-sm" onclick="openCertTypeModal('${ct.id}')">수정</button> <button class="btn btn-danger btn-sm" onclick="deleteCertType('${ct.id}')">삭제</button></td></tr>`).join('');
+}
+function openCertTypeModal(id){
+  document.getElementById('certTypeEditId').value = id||'';
+  document.getElementById('certTypeModalTitle').textContent = id ? '자격증 종류 수정' : '자격증 종류 추가';
+  if (id){ const ct = cache.certTypes.find(x=>x.id===id); document.getElementById('ctName').value=ct.name; document.getElementById('ctPoints').value=ct.points; }
+  else{ document.getElementById('ctName').value=''; document.getElementById('ctPoints').value=''; }
+  document.getElementById('certTypeModalBg').classList.add('active');
+}
+async function saveCertType(){
+  const id = document.getElementById('certTypeEditId').value;
+  const data = { name: document.getElementById('ctName').value.trim(), points: Number(document.getElementById('ctPoints').value)||0 };
+  if (!data.name) return showToast('자격증명을 입력하세요.');
+  try{ if (id) await db.collection('certTypes').doc(id).update(data); else await db.collection('certTypes').add(data);
+    showToast('저장되었습니다.'); closeModal('certTypeModalBg'); await loadAllData(); renderCertTypeTable(); renderCertTypeOptions(); }
+  catch(e){ console.error(e); showToast('저장 중 오류가 발생했습니다.'); }
+}
+async function deleteCertType(id){
+  if (!confirm('이 자격증 종류를 삭제하시겠습니까? 이미 제출된 자격증 기록에는 영향이 없습니다.')) return;
+  try{ await db.collection('certTypes').doc(id).delete(); showToast('삭제되었습니다.'); await loadAllData(); renderCertTypeTable(); }
+  catch(e){ console.error(e); showToast('삭제 중 오류가 발생했습니다.'); }
+}
+
+function populateSkillClassFilter(){
+  document.getElementById('skillClassFilter').innerHTML = `<option value="">전체 반</option>` + CLASS_LIST.map(c=>`<option value="${c}">${c}</option>`).join('');
+}
+function renderSkillMasterTable(){
+  const classFilter = document.getElementById('skillClassFilter').value;
+  const onlyEligible = document.getElementById('skillOnlyEligible').checked;
+  let list = cache.students.map(s=>({ ...s, points: getStudentPoints(s.id) }));
+  if (classFilter) list = list.filter(s=>s.class===classFilter);
+  if (onlyEligible) list = list.filter(s=>s.points>=SKILL_THRESHOLD);
+  list.sort((a,b)=>b.points-a.points);
+  const tbody = document.getElementById('skillMasterTableBody');
+  if (list.length===0){ tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state">조건에 맞는 학생이 없습니다.</div></td></tr>`; return; }
+  tbody.innerHTML = list.map(s=>{
+    const eligible = s.points>=SKILL_THRESHOLD; const docs = cache.skillDocs.filter(d=>d.studentId===s.id);
+    return `<tr><td class="mono">${esc(s.id)}</td><td>${esc(s.name)}</td><td>${esc(s.class)}</td><td class="mono">${s.points}점</td>
+      <td>${eligible?`<span class="stamp stamp-approved">충족</span>`:`<span class="stamp stamp-neutral">미충족</span>`}</td>
+      <td>${docs.length===0?`<span style="color:var(--ink-soft); font-size:12px;">미제출</span>`:docs.map(d=>`<div class="doc-link" onclick="window.open('${d.downloadURL}','_blank')">${esc(d.fileName)}</div>`).join('')}</td></tr>`;
+  }).join('');
+}
+async function downloadZip(docs, zipName){
+  if (docs.length===0) return showToast('다운로드할 서류가 없습니다.');
+  showToast('압축 파일을 준비하고 있습니다...');
+  const zip = new JSZip();
+  for (const d of docs){ try{ const res = await fetch(d.downloadURL); const blob = await res.blob(); zip.file(`${d.class}_${d.studentId}_${d.studentName}_${d.fileName}`, blob); } catch(e){ console.error('파일 다운로드 실패:', d.fileName, e); } }
+  try{ const content = await zip.generateAsync({type:'blob'}); const url = URL.createObjectURL(content); const a=document.createElement('a'); a.href=url; a.download=`${zipName}_${todayStr()}.zip`; a.click(); URL.revokeObjectURL(url); showToast('다운로드가 완료되었습니다.'); }
+  catch(e){ console.error(e); showToast('압축 파일 생성 중 오류가 발생했습니다. Storage CORS 설정을 확인해주세요.'); }
+}
+function downloadSkillDocsByClass(){
+  const classFilter = document.getElementById('skillClassFilter').value;
+  if (!classFilter) return showToast('먼저 반을 선택하세요.');
+  downloadZip(cache.skillDocs.filter(d=>d.class===classFilter), `${classFilter}_기능장서류`);
+}
+function downloadAllSkillDocs(){ downloadZip(cache.skillDocs, `전체_기능장서류`); }
+
+function renderDeadlineSettings(){
+  const toggle = document.getElementById('deadlineLockToggle');
+  const msg = document.getElementById('deadlineMessage');
+  if (!toggle) return;
+  toggle.checked = !!(cache.settings && cache.settings.locked);
+  msg.value = (cache.settings && cache.settings.lockMessage) || '';
+}
+async function saveDeadlineSettings(){
+  const locked = document.getElementById('deadlineLockToggle').checked;
+  const lockMessage = document.getElementById('deadlineMessage').value.trim();
+  try{
+    await db.collection('settings').doc('global').set({ locked, lockMessage, updatedAt: new Date().toISOString() }, { merge: true });
+    cache.settings = { ...cache.settings, locked, lockMessage };
+    showToast(locked ? '마감 처리되었습니다.' : '마감이 해제되었습니다.');
+  } catch(e){ console.error(e); showToast('저장 중 오류가 발생했습니다.'); }
+}
+function renderEnrollModeSetting(){
+  const single = !!(cache.settings && cache.settings.singleEnroll);
+  const singleEl = document.getElementById('enrollModeSingle');
+  const multiEl = document.getElementById('enrollModeMulti');
+  if (!singleEl) return;
+  singleEl.checked = single;
+  multiEl.checked = !single;
+}
+async function saveEnrollModeSetting(){
+  const singleEnroll = document.getElementById('enrollModeSingle').checked;
+  try{
+    await db.collection('settings').doc('global').set({ singleEnroll, updatedAt: new Date().toISOString() }, { merge: true });
+    cache.settings = { ...cache.settings, singleEnroll };
+    showToast(singleEnroll ? '단수신청으로 설정되었습니다.' : '복수신청으로 설정되었습니다.');
+  } catch(e){ console.error(e); showToast('저장 중 오류가 발생했습니다.'); }
+}
+function applyLockBanners(){
+  const locked = !!(cache.settings && cache.settings.locked);
+  const msg = (cache.settings && cache.settings.lockMessage) || '마감되어 더 이상 신청·제출·수정할 수 없습니다.';
+  ['lockBannerStudent1','lockBannerStudent2','lockBannerHr1','lockBannerHr2'].forEach(id=>{
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.style.display = locked ? 'block' : 'none';
+    el.textContent = `⚠ ${msg}`;
+  });
+  const submitBtn = document.getElementById('certSubmitBtn');
+  if (submitBtn) submitBtn.disabled = locked;
+}
+
+function renderStaffTable(){
+  const tbody = document.getElementById('staffTableBody');
+  const list = cache.staff.filter(s=>s.status!=='pending');
+  if (list.length===0){ tbody.innerHTML = `<tr><td colspan="4"><div class="empty-state">등록된 계정이 없습니다.</div></td></tr>`; return; }
+  tbody.innerHTML = list.map(s=>{
+    const badges = [];
+    if (s.homeroomClass) badges.push(`담임(${esc(s.homeroomClass)})`);
+    if (s.programIds && s.programIds.length) badges.push(`방과후(${s.programIds.map(pid=>{const p=cache.programs.find(x=>x.id===pid); return p?esc(p.name):'';}).filter(Boolean).join(', ')})`);
+    if (s.isAdmin) badges.push('관리자');
+    if (s.status==='rejected') badges.push('<span style="color:var(--red);">거절됨</span>');
+    return `<tr><td class="mono">${esc(s.id)}</td><td>${esc(s.name)}</td><td>${badges.join(' · ')||'-'}</td><td><button class="btn btn-ghost btn-sm" onclick="openStaffModal('${s.id}')">수정</button> <button class="btn btn-danger btn-sm" onclick="deleteStaff('${s.id}')">삭제</button></td></tr>`;
+  }).join('');
+}
+
+function renderPendingStaffTable(){
+  const tbody = document.getElementById('pendingStaffTableBody');
+  if (!tbody) return;
+  const pending = cache.staff.filter(s=>s.status==='pending');
+  if (pending.length===0){ tbody.innerHTML = `<tr><td colspan="4"><div class="empty-state">승인 대기 중인 신청이 없습니다.</div></td></tr>`; return; }
+  tbody.innerHTML = pending.map(s=>`
+    <tr>
+      <td class="mono">${esc(s.id)}</td><td>${esc(s.name)}</td><td class="mono">${esc((s.requestedAt||'').split('T')[0])}</td>
+      <td>
+        <button class="btn btn-sm" style="background:var(--green-soft); color:var(--green);" onclick="approveStaff('${s.id}')">바로 승인</button>
+        <button class="btn btn-ghost btn-sm" onclick="openStaffModal('${s.id}')">권한 설정 후 승인</button>
+        <button class="btn btn-danger btn-sm" onclick="rejectStaff('${s.id}')">거절</button>
+      </td>
+    </tr>`).join('');
+}
+
+async function approveStaff(id){
+  try{ await db.collection('staff').doc(id).update({ status:'approved' }); showToast('승인되었습니다. 필요하면 "수정"에서 권한을 배정해주세요.'); await loadAllData(); renderStaffTable(); renderPendingStaffTable(); }
+  catch(e){ console.error(e); showToast('처리 중 오류가 발생했습니다.'); }
+}
+async function rejectStaff(id){
+  if (!confirm('이 가입 신청을 거절하시겠습니까? 계정이 삭제됩니다.')) return;
+  try{ await db.collection('staff').doc(id).delete(); showToast('거절 처리되었습니다.'); await loadAllData(); renderStaffTable(); renderPendingStaffTable(); }
+  catch(e){ console.error(e); showToast('처리 중 오류가 발생했습니다.'); }
+}
+
+function openStaffModal(id){
+  document.getElementById('staffEditId').value = id || '';
+  document.getElementById('staffModalTitle').textContent = id ? '계정 수정' : '계정 추가';
+  const idInput = document.getElementById('stfId');
+  if (id){
+    const s = cache.staff.find(x=>x.id===id);
+    idInput.value = s.id; idInput.disabled = false;
+    document.getElementById('stfName').value = s.name||'';
+    document.getElementById('stfPassword').value = '';
+    document.getElementById('stfPassword').placeholder = '변경하지 않으려면 비워두세요';
+    document.getElementById('stfIsHomeroom').checked = !!s.homeroomClass;
+    document.getElementById('stfClass').value = s.homeroomClass || CLASS_LIST[0];
+    document.getElementById('stfIsProgram').checked = !!(s.programIds && s.programIds.length);
+    document.getElementById('stfIsAdmin').checked = !!s.isAdmin;
+    onStaffCapabilityChange();
+    (s.programIds||[]).forEach(pid=>{ const cb = document.querySelector(`#stfProgramCheckboxes input[value="${pid}"]`); if (cb) cb.checked = true; });
+  } else {
+    idInput.value=''; idInput.disabled=false;
+    document.getElementById('stfName').value=''; document.getElementById('stfPassword').value=''; document.getElementById('stfPassword').placeholder='비밀번호';
+    document.getElementById('stfIsHomeroom').checked=false; document.getElementById('stfClass').value=CLASS_LIST[0];
+    document.getElementById('stfIsProgram').checked=false; document.getElementById('stfIsAdmin').checked=false;
+    onStaffCapabilityChange();
+  }
+  document.getElementById('staffModalBg').classList.add('active');
+}
+function onStaffCapabilityChange(){
+  const showHomeroom = document.getElementById('stfIsHomeroom').checked;
+  const showProgram = document.getElementById('stfIsProgram').checked;
+  document.getElementById('stfHomeroomFields').style.display = showHomeroom ? 'block' : 'none';
+  document.getElementById('stfProgramFields').style.display = showProgram ? 'block' : 'none';
+  if (showProgram){
+    const box = document.getElementById('stfProgramCheckboxes');
+    box.innerHTML = cache.programs.length ? cache.programs.map(p=>`<label><input type="checkbox" value="${p.id}"> ${esc(p.name)}</label>`).join('') : `<span style="font-size:12px; color:var(--ink-soft);">개설된 프로그램이 없습니다. 먼저 방과후 관리 탭에서 프로그램을 개설하세요.</span>`;
+  }
+}
+async function saveStaff(){
+  const editId = document.getElementById('staffEditId').value;
+  const id = document.getElementById('stfId').value.trim();
+  const name = document.getElementById('stfName').value.trim();
+  const pw = document.getElementById('stfPassword').value;
+  const isHomeroom = document.getElementById('stfIsHomeroom').checked;
+  const isProgram = document.getElementById('stfIsProgram').checked;
+  const isAdmin = document.getElementById('stfIsAdmin').checked;
+  if (!id || !name) return showToast('아이디와 이름은 필수입니다.');
+  if (!editId && !pw) return showToast('비밀번호를 입력하세요.');
+  if (!isHomeroom && !isProgram && !isAdmin) return showToast('최소 하나 이상의 권한을 선택하세요.');
+
+  const existing = editId ? cache.staff.find(x=>x.id===editId) : null;
+  const data = { name, isAdmin, homeroomClass: isHomeroom ? document.getElementById('stfClass').value : '', programIds: [] };
+  if (isProgram){
+    const checked = [...document.querySelectorAll('#stfProgramCheckboxes input:checked')].map(cb=>cb.value);
+    if (checked.length===0) return showToast('담당 프로그램을 1개 이상 선택하세요.');
+    data.programIds = checked;
+  }
+  if (pw) data.password = pw;
+  else data.password = existing ? existing.password : '';
+
+  // 승인 대기 상태였던 계정을 관리자가 편집/저장하면 승인 처리로 간주
+  data.status = (existing && existing.status === 'pending') ? 'approved' : (existing ? (existing.status || 'approved') : 'approved');
+  if (existing && existing.requestedAt) data.requestedAt = existing.requestedAt;
+
+  try{
+    if (editId && id !== editId){
+      // 아이디 변경: 새 아이디로 이전 + 기존 문서 삭제
+      const dupCheck = await db.collection('staff').doc(id).get();
+      if (dupCheck.exists) return showToast('이미 사용 중인 아이디입니다.');
+      const batch = db.batch();
+      batch.set(db.collection('staff').doc(id), data);
+      batch.delete(db.collection('staff').doc(editId));
+      await batch.commit();
+    } else {
+      await db.collection('staff').doc(id).set(data);
+    }
+    showToast('저장되었습니다.'); closeModal('staffModalBg'); await loadAllData(); renderStaffTable(); renderPendingStaffTable();
+  } catch(e){ console.error(e); showToast('저장 중 오류가 발생했습니다.'); }
+}
+async function deleteStaff(id){
+  if (!confirm('이 계정을 삭제하시겠습니까?')) return;
+  try{ await db.collection('staff').doc(id).delete(); showToast('삭제되었습니다.'); await loadAllData(); renderStaffTable(); renderPendingStaffTable(); }
+  catch(e){ console.error(e); showToast('삭제 중 오류가 발생했습니다.'); }
+}
+
+/* ---------- 엑셀 내보내기 공통 ---------- */
+function exportToExcel(rows, filename){
+  const ws = XLSX.utils.json_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Sheet1');
+  XLSX.writeFile(wb, `${filename}_${todayStr()}.xlsx`);
+  showToast('엑셀 파일이 다운로드되었습니다.');
+}
+
+/* ---------- 초기화 ---------- */
+initFirebase();
+</script>
+</body>
+</html>
